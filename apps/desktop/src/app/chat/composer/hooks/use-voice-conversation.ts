@@ -12,6 +12,7 @@ import {
 } from '@/lib/voice-playback'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
 import { notify, notifyError } from '@/store/notifications'
+import { $micLevel, $voiceConversationStatus } from '@/store/voice-conversation'
 import { $voicePlayback } from '@/store/voice-playback'
 
 import { useMicRecorder } from './use-mic-recorder'
@@ -78,6 +79,26 @@ export function useVoiceConversation({
   const busyRef = useRef(busy)
   const statusRef = useRef<ConversationStatus>('idle')
   const wasEnabledRef = useRef(enabled)
+
+  // Mirror the machine into the shared presence atoms (read-only elsewhere).
+   
+  useEffect(() => {
+    $voiceConversationStatus.set(status)
+
+    return () => {
+      $voiceConversationStatus.set('idle')
+    }
+  }, [status])
+
+   
+  useEffect(() => {
+    $micLevel.set(status === 'listening' ? level : 0)
+
+    return () => {
+      $micLevel.set(0)
+    }
+  }, [level, status])
+
   const onStopWordRef = useRef(onStopWord)
   const onInterruptRef = useRef(onInterrupt)
 
@@ -487,6 +508,19 @@ export function useVoiceConversation({
    */
   const openLiveSpeech = useCallback(
     (responseId: string) => {
+      // One speech session per reply, enforced with a REF.
+      //
+      // The turn-drive effect below re-runs on every render (its callback deps
+      // are fresh closures each time) and `setStatus('speaking')` — its only
+      // other guard — does not take effect until React commits. A render in
+      // between, and streaming deltas produce plenty, re-entered here and
+      // opened a SECOND socket for the same reply: the backend synthesized it
+      // twice and the user heard the answer twice. `dropSpeechSession` clears
+      // this ref, so a barge or a genuinely new reply still opens a session.
+      if (responseIdRef.current === responseId) {
+        return
+      }
+
       const sequenceBeforeStart = $voicePlayback.get().sequence
 
       responseIdRef.current = responseId

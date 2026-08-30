@@ -16,8 +16,8 @@ export function EmptyState({
   return (
     <div className={cn('grid min-h-48 place-items-center text-center', className)}>
       <div>
-        <div className="text-sm font-medium">{title}</div>
-        {description && <div className="mt-1 text-xs text-muted-foreground">{description}</div>}
+        <div className="text-voice text-lg leading-snug text-(--ui-text-primary)">{title}</div>
+        {description && <div className="mt-1.5 text-xs text-muted-foreground">{description}</div>}
       </div>
     </div>
   )

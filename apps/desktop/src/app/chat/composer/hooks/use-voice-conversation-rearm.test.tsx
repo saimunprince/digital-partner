@@ -155,6 +155,42 @@ async function beginReply(hook: ReturnType<typeof renderRearmConversation>) {
   })
 }
 
+describe('one speech session per reply', () => {
+  afterEach(() => {
+    cleanup()
+    vi.clearAllMocks()
+    mocks.resetSpeechMocks()
+    $voicePlayback.set({ audioElement: null, messageId: null, sequence: 0, source: null, status: 'idle' })
+  })
+
+  it('does not open a second socket when a render lands mid-open', async () => {
+    // The turn-drive effect re-runs on every render, and setStatus('speaking')
+    // — its only other guard — has not committed while the stream is still
+    // opening. A delta arriving in that window used to open a SECOND session:
+    // the reply was synthesized twice and spoken twice.
+    mocks.deferStreamStart()
+
+    const hook = renderRearmConversation('reply-1', 'Two meetings today.')
+
+    await beginReply(hook)
+    await waitFor(() => expect(mocks.startSpeechStream).toHaveBeenCalledTimes(1))
+
+    // Renders while the socket is still opening — what streaming deltas do.
+    await act(async () => {
+      hook.rerender({ enabled: true })
+      hook.rerender({ enabled: true })
+    })
+
+    expect(mocks.startSpeechStream).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      mocks.continueStreamStart()
+    })
+
+    expect(mocks.startSpeechStream).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('useVoiceConversation playback rearm', () => {
   afterEach(() => {
     cleanup()

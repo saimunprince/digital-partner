@@ -115,7 +115,7 @@ const ApprovalBar: FC<{ request: ApprovalRequest; surface: 'floating' | 'inline'
   // a pending row can't be expanded (no result yet), so the full command was
   // previously only reachable via the "Always allow" modal. Let the user reveal
   // it inline instead — "expand, Run" (2 clicks) rather than the modal dance.
-  const [showCommand, setShowCommand] = useState(false)
+  const [showCommand, setShowCommand] = useState(true)
   const busy = submitting !== null
   // false when the backend won't honor a permanent allow (tirith warning) → hide "Always allow".
   const allowPermanent = request.allowPermanent !== false
@@ -184,10 +184,17 @@ const ApprovalBar: FC<{ request: ApprovalRequest; surface: 'floating' | 'inline'
 
   return (
     <div
-      className={cn(surface === 'inline' ? 'mt-1 ps-5' : 'mt-2')}
+      className={cn(surface === 'inline' ? 'mt-1.5 ps-5' : 'mt-2')}
       data-slot={surface === 'inline' ? 'tool-approval-inline' : 'tool-approval-actions'}
     >
-      <div className="flex items-center gap-2.5">
+      {/* A decision surface, not a button row: a single accent hairline and a
+          plain-language intent line make the threshold legible before the
+          command detail below it. */}
+      <div className="rounded-lg border border-primary/25 bg-primary/[0.04] p-2.5">
+        {request.description && (
+          <p className="mb-2 text-[0.8125rem] leading-snug text-foreground">{request.description}</p>
+        )}
+        <div className="flex items-center gap-2.5">
         <div className="inline-flex h-6 items-stretch overflow-hidden rounded-md border border-primary/25 bg-primary/10 text-primary">
           <Button
             className="h-full gap-1 rounded-none px-2 text-xs font-medium text-primary hover:bg-primary/15 hover:text-primary"
@@ -262,11 +269,12 @@ const ApprovalBar: FC<{ request: ApprovalRequest; surface: 'floating' | 'inline'
         )}
       </div>
 
-      {showCommand && hasCommand && (
-        <pre className="mt-1.5 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-chat-surface-background) px-2.5 py-1.5 font-mono text-xs leading-snug text-foreground">
-          {request.command.trim()}
-        </pre>
-      )}
+        {showCommand && hasCommand && (
+          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-chat-surface-background) px-2.5 py-1.5 font-mono text-xs leading-snug text-foreground">
+            {request.command.trim()}
+          </pre>
+        )}
+      </div>
 
       <Dialog onOpenChange={setConfirmAlways} open={confirmAlways}>
         <DialogContent className="max-w-md">

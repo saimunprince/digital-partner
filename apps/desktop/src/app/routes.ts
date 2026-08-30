@@ -7,6 +7,7 @@ import { registry } from '@/contrib/registry'
 type NavigateLike = (to: string, options?: { replace?: boolean }) => void
 
 export const SESSION_ROUTE_PREFIX = '/'
+export const HOME_ROUTE = '/home'
 export const NEW_CHAT_ROUTE = '/'
 export const SETTINGS_ROUTE = '/settings'
 export const COMMAND_CENTER_ROUTE = '/command-center'
@@ -18,36 +19,53 @@ export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
 export const STARMAP_ROUTE = '/starmap'
+export const TASKS_ROUTE = '/tasks'
+export const CALENDAR_ROUTE = '/calendar'
+export const MEMORY_ROUTE = '/memory'
+export const ACTIVITY_ROUTE = '/activity'
+export const INTEGRATIONS_ROUTE = '/integrations'
 
 export type AppView =
+  | 'activity'
   | 'agents'
   | 'artifacts'
+  | 'calendar'
   | 'chat'
   | 'command-center'
   | 'cron'
+  | 'home'
   // A contributed (plugin) full page at its own route — NOT chat. Without this
   // distinction contributed paths fell through appViewForPath's 'chat' default,
   // so the sidebar kept a session highlighted and the titlebar kept the
   // session-title dropdown while a plugin page was showing.
   | 'extension'
+  | 'integrations'
+  | 'memory'
   | 'messaging'
   | 'profiles'
   | 'settings'
   | 'skills'
   | 'starmap'
+  | 'tasks'
   | 'webhooks'
 
 export type AppRouteId =
+  | 'activity'
   | 'agents'
   | 'artifacts'
+  | 'calendar'
   | 'command-center'
   | 'cron'
+  | 'home'
+  | 'integrations'
+  | 'memory'
   | 'messaging'
   | 'new'
   | 'profiles'
   | 'settings'
   | 'skills'
   | 'starmap'
+  | 'tasks'
   | 'webhooks'
 
 export interface AppRoute {
@@ -67,7 +85,13 @@ export const APP_ROUTES = [
   { id: 'cron', path: CRON_ROUTE, view: 'cron' },
   { id: 'profiles', path: PROFILES_ROUTE, view: 'profiles' },
   { id: 'agents', path: AGENTS_ROUTE, view: 'agents' },
-  { id: 'starmap', path: STARMAP_ROUTE, view: 'starmap' }
+  { id: 'starmap', path: STARMAP_ROUTE, view: 'starmap' },
+  { id: 'home', path: HOME_ROUTE, view: 'home' },
+  { id: 'tasks', path: TASKS_ROUTE, view: 'tasks' },
+  { id: 'calendar', path: CALENDAR_ROUTE, view: 'calendar' },
+  { id: 'memory', path: MEMORY_ROUTE, view: 'memory' },
+  { id: 'activity', path: ACTIVITY_ROUTE, view: 'activity' },
+  { id: 'integrations', path: INTEGRATIONS_ROUTE, view: 'integrations' }
 ] as const satisfies readonly AppRoute[]
 
 const APP_VIEW_BY_PATH = new Map<string, AppView>(APP_ROUTES.map(route => [route.path, route.view]))

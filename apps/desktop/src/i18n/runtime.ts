@@ -1,3 +1,4 @@
+import { interpolateBrand } from './brand-interpolate'
 import { TRANSLATIONS } from './catalog'
 import { DEFAULT_LOCALE } from './languages'
 import type { Locale } from './types'
@@ -37,14 +38,14 @@ export function translateFrom(
   const active = render(resolvePath(source(locale), key), args)
 
   if (active !== null) {
-    return active
+    return interpolateBrand(active)
   }
 
   if (locale !== DEFAULT_LOCALE) {
     const fallback = render(resolvePath(source(DEFAULT_LOCALE), key), args)
 
     if (fallback !== null) {
-      return fallback
+      return interpolateBrand(fallback)
     }
   }
 

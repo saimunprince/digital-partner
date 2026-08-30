@@ -2691,5 +2691,91 @@ export interface Translations {
       description: string
       toggle: (open: boolean) => string
     }
+  },
+  partner: {
+    nav: {
+      home: string
+      chat: string
+      tasks: string
+      calendar: string
+      memory: string
+      skills: string
+      activity: string
+      integrations: string
+      settings: string
+    }
+    home: {
+      title: string
+      emptyTitle: string
+      emptyDesc: string
+      greetingMorning: string
+      greetingAfternoon: string
+      greetingEvening: string
+      subtitle: string
+      talk: string
+      newConversation: string
+      activeNow: string
+      nothingActive: string
+      recent: string
+      automations: string
+      noAutomations: string
+      nextRun: (when: string) => string
+      schedule: string
+      scheduleConnect: string
+      scheduleConnectCta: string
+      askPlaceholder: string
+      askHint: string
+      talkHint: string
+      talkAria: string
+      openChat: string
+      endVoice: string
+      interruptHint: string
+      voiceStatus: Record<'idle' | 'listening' | 'speaking' | 'thinking' | 'transcribing', string>
+    }
+    tasks: {
+      title: string
+      emptyTitle: string
+      emptyDesc: string
+    }
+    calendar: {
+      title: string
+      emptyTitle: string
+      emptyDesc: string
+    }
+    memory: {
+      title: string
+      emptyTitle: string
+      emptyDesc: string
+      remembered: string
+      learned: string
+      graphView: string
+      filesTitle: string
+      filesDesc: (memory: string, user: string) => string
+      provider: (name: string) => string
+      sourceMemory: string
+      sourceProfile: string
+    }
+    activity: {
+      title: string
+      emptyTitle: string
+      emptyDesc: string
+      conversation: string
+      automation: string
+      toolRuns: (count: number) => string
+    }
+    integrations: {
+      title: string
+      emptyTitle: string
+      emptyDesc: string
+      channels: string
+      channelsDesc: string
+      connectors: string
+      connectorsDesc: string
+      accounts: string
+      accountsDesc: string
+      automation: string
+      automationDesc: string
+      open: string
+    }
   }
 }

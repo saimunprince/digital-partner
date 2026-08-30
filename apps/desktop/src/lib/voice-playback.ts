@@ -1,6 +1,7 @@
 import { resolveGatewayWsUrl } from '@hermes/shared'
 
 import { getApiRequestProfile, speakText } from '@/hermes'
+import { $speechLevel } from '@/store/voice-conversation'
 import {
   $voicePlayback,
   setVoicePlaybackState,
@@ -28,6 +29,90 @@ let sequence = 0
 // no-user-gesture-required policy means this is already unlocked, so this is a
 // cheap no-op fallback for other surfaces.
 let unlockCtx: AudioContext | null = null
+
+/**
+ * Publishes the assistant's output level while it speaks.
+ *
+ * The orb should move with the actual speech, not a synthetic envelope, so the
+ * playback graph gets an AnalyserNode and its RMS is sampled per frame. Started
+ * when a stream opens and stopped when it ends, so nothing runs while silent.
+ */
+function meterFromAnalyser(analyser: AnalyserNode): () => void {
+  const samples = new Float32Array(analyser.fftSize)
+  let frame = 0
+
+  const tick = () => {
+    frame = requestAnimationFrame(tick)
+    analyser.getFloatTimeDomainData(samples)
+
+    let sum = 0
+
+    for (const sample of samples) {
+      sum += sample * sample
+    }
+
+    // RMS is small for speech; scale so ordinary talking reaches most of the
+    // range without clipping every syllable to 1.
+    $speechLevel.set(Math.min(1, Math.sqrt(sum / samples.length) * 3.2))
+  }
+
+  tick()
+
+  return () => {
+    cancelAnimationFrame(frame)
+    $speechLevel.set(0)
+  }
+}
+
+/**
+ * Meter an `<audio>` element's output.
+ *
+ * Non-streaming TTS providers (edge, piper, kitten, …) play a whole clip
+ * through an element rather than the PCM stream, and that is the common path —
+ * without this the orb would sit still through most replies. The element is
+ * routed through its own context so the meter sees exactly what is heard.
+ */
+function startElementLevelMeter(audio: HTMLAudioElement): () => void {
+  const Ctor =
+    window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+
+  if (!Ctor) {
+    return () => undefined
+  }
+
+  let context: AudioContext
+
+  try {
+    context = new Ctor()
+  } catch {
+    return () => undefined
+  }
+
+  let stopMeter: (() => void) | null = null
+
+  try {
+    const source = context.createMediaElementSource(audio)
+    const analyser = context.createAnalyser()
+
+    analyser.fftSize = 512
+    source.connect(analyser)
+    // Still route to the speakers: createMediaElementSource redirects the
+    // element's output into the graph, so skipping this mutes the reply.
+    analyser.connect(context.destination)
+    stopMeter = meterFromAnalyser(analyser)
+  } catch {
+    // Element already bound to another context (a replayed clip): leave the
+    // audio alone and simply publish no level.
+    void context.close().catch(() => undefined)
+
+    return () => undefined
+  }
+
+  return () => {
+    stopMeter?.()
+    void context.close().catch(() => undefined)
+  }
+}
 
 async function unlockAutoplay(): Promise<void> {
   if (typeof window === 'undefined') {
@@ -153,6 +238,8 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
   ws.binaryType = 'arraybuffer'
 
   let context: AudioContext | null = null
+  let analyser: AnalyserNode | null = null
+  let stopLevelMeter: (() => void) | null = null
   let streamRate = 24_000
   let nextStartAt = 0
   let carry: null | Uint8Array = null
@@ -178,6 +265,9 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
         // already closed
       }
 
+      stopLevelMeter?.()
+      stopLevelMeter = null
+      analyser = null
       void context?.close().catch(() => undefined)
       context = null
       resolve(value)
@@ -239,7 +329,8 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
 
     const source = context.createBufferSource()
     source.buffer = buffer
-    source.connect(context.destination)
+    // Through the analyser so the level meter sees exactly what is played.
+    source.connect(analyser ?? context.destination)
 
     const startAt = Math.max(context.currentTime + 0.05, nextStartAt)
     source.start(startAt)
@@ -273,6 +364,10 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
     if (frame.type === 'start') {
       streamRate = frame.sample_rate || 24_000
       context = new AudioContext()
+      analyser = context.createAnalyser()
+      analyser.fftSize = 512
+      analyser.connect(context.destination)
+      stopLevelMeter = meterFromAnalyser(analyser)
 
       // Autoplay policy can hand back a suspended context when playback wasn't
       // started by a user gesture (e.g. a wake-word-started voice turn). Resume
@@ -364,6 +459,8 @@ async function playSpeechDataUrl(
 
   const audio = new Audio(response.data_url)
   currentAudio = audio
+  const stopElementMeter = startElementLevelMeter(audio)
+
   setVoicePlaybackState(currentState('speaking', options, audio))
 
   await new Promise<void>((resolve, reject) => {
@@ -378,6 +475,7 @@ async function playSpeechDataUrl(
       audio.removeEventListener('ended', onEnded)
       audio.removeEventListener('error', onError)
       audio.removeEventListener('timeupdate', armStall)
+      stopElementMeter()
       currentStop = null
     }
 

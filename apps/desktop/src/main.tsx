@@ -19,6 +19,7 @@ import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router'
 
 import App from './app'
+import { BRAND } from './brand'
 import { RootErrorBoundary } from './components/error-boundary'
 import { HapticsProvider } from './components/haptics-provider'
 import { RootTooltipProvider } from './components/ui/tooltip'
@@ -41,7 +42,7 @@ if (import.meta.env.MODE !== 'production' || import.meta.env.VITE_PERF_PROBE ===
 const winParam = new URLSearchParams(window.location.search).get('win')
 
 if (winParam === 'hud') {
-  document.title = 'Hermes HUD'
+  document.title = `${BRAND.productName} HUD`
 }
 
 if (winParam === 'overlay') {
@@ -54,6 +55,8 @@ if (winParam === 'overlay') {
   // CSS animations do not inherit Chromium's JS-loop pause policy. Mirror the
   // main window's focus/visibility state to :root so decorative infinite
   // animations stop producing frames when nobody can see them.
+  document.title = BRAND.productName
+
   installRendererAnimationPauseState()
 
   createRoot(document.getElementById('root')!).render(

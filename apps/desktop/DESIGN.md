@@ -45,11 +45,21 @@ one-off at the call site.
 
 ## Information architecture
 
-- **Chat is the home surface.** The transcript and composer stay primary; tools,
-  previews, files, review, and terminal complement the conversation.
-- **Pages are durable destinations.** Chat, Skills, Messaging, and Artifacts
-  remain in shell chrome. Do not hide a distinct product noun inside an
-  unrelated page.
+- **The nav rail is the product's spine.** The leftmost column
+  (`src/app/shell/nav-sidebar.tsx`) owns primary navigation: Home, Chat, Tasks,
+  Calendar, Memory, Skills, Activity, Integrations, with Settings at the
+  bottom. It collapses to icons (`$navRailCollapsed`); plugin `sidebar.nav`
+  contributions render in their own cluster below the core areas. The chat
+  sidebar carries no navigation rows — only New Session and the session list.
+- **Chat is the primary working surface.** The transcript and composer stay
+  central to the product; tools, previews, files, review, and terminal
+  complement the conversation. Home is the landing surface — a calm
+  day-at-a-glance, never a dashboard of boxes.
+- **Pages are durable destinations.** Home, Chat, Tasks, Calendar, Memory,
+  Skills, Activity, and Integrations render in shell chrome. Do not hide a
+  distinct product noun inside an unrelated page. Messaging, Artifacts, and
+  contributed pages stay routable (palette, links, Integrations/Activity entry
+  points) without rail rows.
 - **Route overlays are short tasks.** Settings, Command Center, Cron, Profiles,
   Agents, and Starmap render as `OverlayView` cards and return to the previous
   route on close. Model/session pickers and dialogs layer above the current
@@ -98,6 +108,10 @@ for call-site shadow or border inventions.
 | `--ui-widget-surface-background` | fill for inline chat widgets (`WIDGET_SHELL_CLASS`) |
 | `--chrome-action-hover` | hover fill for quiet controls |
 | `--theme-primary`, `--ui-accent` | brand/accent |
+| `--horizon-a` / `--horizon-b` | the horizon gradient (dusk indigo → dawn peach). **Presence and brand moments ONLY** — never buttons, chrome, or charts |
+| `--presence-ring` / `--presence-ring-quiet` / `--presence-error` | the Aperture's ring strokes |
+| `--font-voice` | the assistant's speaking face (Fraunces italic, bundled). Use via `.text-voice` |
+| `--composer-width` | the reading column shared by transcript and composer (`min(100%, 58rem)`) |
 
 Never hardcode `border-gray-*`, `bg-white`, `text-black`, etc. The white tile in
 `BrandMark` is the one sanctioned literal (the mark needs a fixed backdrop).
@@ -219,6 +233,30 @@ Notes:
   `--z-connecting` → `--z-onboarding` → `--z-setup` → `--z-crash`. Plain
   `z-10`/`z-20` are still right for stacking *within* one component.
 
+## Identity — theme, presence, voice
+
+- **Horizon is the product theme** (`src/themes/presets.ts`, `DEFAULT_SKIN_NAME`).
+  Warm graphite dark `#141318` / warm paper light `#F7F6F3`; text is warm
+  off-white / warm ink, never pure `#FFF`/`#000`. **Primary buttons are ink,
+  not accent** — the accent stays reserved for focus, selection, and active
+  state. Other skins remain available; they are user choices, not the identity.
+- **The Aperture** (`src/components/presence/presence-orb.tsx`) is the product's
+  mark: a thin luminous ring carrying the horizon gradient, sized `hero` /
+  `compact` / `micro`. It reads state from `$presence` (idle · listening ·
+  transcribing · thinking · executing · speaking · error) through ring
+  *behavior*, never text. It is the only continuously animating element, and it
+  registers with `data-renderer-animations-paused`. Do not reintroduce
+  sparkle/star "AI" glyphs anywhere.
+- **The voice face** (`.text-voice`, Fraunces italic, bundled offline) is
+  rationed to moments where the assistant speaks: the Home greeting,
+  empty-state first lines, onboarding headlines. Never body copy, lists,
+  buttons, settings, or anything below ~18px.
+- **The ground is flat.** No watermark behind live text (the chat backdrop is
+  opt-in, off by default), no noise, no animated backgrounds.
+- **The transcript is a reading column**, not a full-bleed pane — transcript and
+  composer share `--composer-width` so line length stays trackable on wide
+  displays.
+
 ## Iconography & brand
 
 - **Tabler** is the default component/chrome set. Import its curated aliases and
@@ -284,9 +322,14 @@ long transcript or a busy terminal.
 
 - Every user-facing string goes through `useI18n()` (`src/i18n/context.tsx`).
   No literals in JSX.
-- **Update all locales together** — `en`, `ja`, `zh`, `zh-hant`. A string change
-  in `en.ts` that skips the others is a regression (drifted punctuation,
-  stale labels). Keep trailing-punctuation and tone consistent across all four.
+- **Update all locales together** — `en`, `ja`, `zh`, `zh-hant`, `ar` (RTL). A
+  string change in `en.ts` that skips the others is a regression (drifted
+  punctuation, stale labels). Keep trailing-punctuation and tone consistent
+  across all five, and check new surfaces under `ar`'s right-to-left layout.
+- **Brand strings use the `{brand}` token.** Product identity comes from
+  `src/brand.ts` (interpolated in `src/i18n/brand-interpolate.ts`); never
+  hardcode the product name in a locale string. Engine-truth copy (backend,
+  install/update flows, Hermes Cloud) keeps the literal Hermes name.
 
 ## State (TypeScript)
 

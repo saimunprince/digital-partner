@@ -113,6 +113,12 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   { id: 'nav.artifacts', category: 'navigation', defaults: [] },
   { id: 'nav.cron', category: 'navigation', defaults: [] },
   { id: 'nav.agents', category: 'navigation', defaults: [] },
+  { id: 'nav.home', category: 'navigation', defaults: [] },
+  { id: 'nav.tasks', category: 'navigation', defaults: [] },
+  { id: 'nav.calendar', category: 'navigation', defaults: [] },
+  { id: 'nav.memory', category: 'navigation', defaults: [] },
+  { id: 'nav.activity', category: 'navigation', defaults: [] },
+  { id: 'nav.integrations', category: 'navigation', defaults: [] },
 
   // ── View (layout + appearance + the shortcuts panel itself) ───────────────
   { id: 'view.toggleSidebar', category: 'view', defaults: ['mod+b'] },

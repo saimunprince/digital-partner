@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 
+import { desktopSessionCreateParams } from '@/app/session/hooks/use-session-actions'
+import { $gateway } from '@/store/gateway'
 import {
   initQuickEntryBridge,
   QUICK_TARGET_CURRENT,
@@ -7,8 +9,10 @@ import {
   type QuickEntrySessionOption,
   setQuickEntrySubmitHandler
 } from '@/store/quick-entry'
-import { $gatewayState, $sessions } from '@/store/session'
+import { $currentCwd, $gatewayState, $sessions } from '@/store/session'
 import { sessionTileDelegate } from '@/store/session-states'
+import { $voiceRuntimeId, $voiceStoredSessionId } from '@/store/voice-session'
+import { setVoiceRuntimeResolver, setVoiceSubmitHandler } from '@/store/voice-submit'
 import { isAuxiliaryWindow } from '@/store/windows'
 
 interface QuickEntryBridgeParams {
@@ -19,6 +23,58 @@ interface QuickEntryBridgeParams {
 // The picker is a capture aid, not a session browser — a handful of recent
 // rows is the whole point.
 const QUICK_ENTRY_SESSION_OPTIONS = 5
+
+/**
+ * Bind (and if necessary create) the voice command center's session.
+ *
+ * Kept out of the primary submit path deliberately: `createBackendSessionForSend`
+ * aborts on view drift, which is correct for a chat send and wrong for a
+ * background session that must survive the user navigating anywhere.
+ */
+async function ensureVoiceRuntime(): Promise<null | string> {
+  const delegate = sessionTileDelegate()
+
+  if (!delegate) {
+    return null
+  }
+
+  const stored = $voiceStoredSessionId.get()
+
+  if (stored) {
+    try {
+      const runtimeId = await delegate.resumeTile(stored)
+
+      $voiceRuntimeId.set(runtimeId)
+
+      return runtimeId
+    } catch {
+      // Deleted or unreachable — mint a fresh one below.
+      $voiceStoredSessionId.set(null)
+    }
+  }
+
+  const gateway = $gateway.get()
+
+  if (!gateway) {
+    return null
+  }
+
+  const params = await desktopSessionCreateParams($currentCwd.get().trim())
+  const created = await gateway.request<{ stored_session_id?: null | string }>('session.create', params)
+  const storedSessionId = created.stored_session_id ?? null
+
+  if (!storedSessionId) {
+    return null
+  }
+
+  $voiceStoredSessionId.set(storedSessionId)
+
+  const runtimeId = await delegate.resumeTile(storedSessionId)
+
+  $voiceRuntimeId.set(runtimeId)
+
+  return runtimeId
+}
 
 function sessionOptions(): QuickEntrySessionOption[] {
   return $sessions
@@ -90,10 +146,36 @@ export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: Quic
       void submitTextRef.current(text)
     })
 
+    // Home's voice surface owns its OWN conversation: talking must not rewrite
+    // what Chat is showing, and opening Chat must not interrupt a spoken
+    // thread. The turn is created once, persisted, and submitted in the
+    // background through the tile delegate — never through the primary view.
+    // Binding is exposed on its own so a surface can warm the thread when the
+    // user opens voice, rather than discovering its history mid-turn.
+    setVoiceRuntimeResolver(ensureVoiceRuntime)
+
+    setVoiceSubmitHandler(async text => {
+      const runtimeId = await ensureVoiceRuntime()
+
+      if (!runtimeId) {
+        // No delegate/gateway yet: fall back to the ordinary path rather than
+        // dropping what the user just said.
+        await submitTextRef.current(text)
+
+        return
+      }
+
+      const delegate = sessionTileDelegate()
+
+      await delegate?.submitToSession(runtimeId, text)
+    })
+
     const dispose = initQuickEntryBridge()
 
     return () => {
       setQuickEntrySubmitHandler(null)
+      setVoiceSubmitHandler(null)
+      setVoiceRuntimeResolver(null)
       dispose()
     }
   }, [])

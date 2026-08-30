@@ -206,6 +206,112 @@ def test_xai_available_uses_oauth_credential_resolver(monkeypatch):
     assert ts.XAIStreamer.available() is False
 
 
+# ── Fish Audio chunked HTTP ──────────────────────────────────────────────
+
+
+class _FakeFishResponse:
+    """Minimal stand-in for a streamed ``requests`` response."""
+
+    def __init__(self, chunks, status=200):
+        self._chunks = chunks
+        self.status = status
+        self.raised = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def raise_for_status(self):
+        self.raised = True
+        if self.status != 200:
+            raise RuntimeError(f"HTTP {self.status}")
+
+    def iter_content(self, chunk_size=None):
+        yield from self._chunks
+
+
+def _fish_streamer(section=None):
+    return ts.FishAudioStreamer({"fish": section or {}}, section or {})
+
+
+def test_fish_is_unavailable_without_a_key(monkeypatch):
+    monkeypatch.setattr(ts, "_resolve_key", lambda *_: "")
+    assert ts.FishAudioStreamer.available() is False
+
+
+def test_fish_accepts_either_key_name(monkeypatch):
+    monkeypatch.setattr(ts, "_resolve_key", lambda env, _: "k" if env == "FISH_AUDIO_API_KEY" else "")
+    assert ts.FishAudioStreamer.available() is True
+
+
+def test_fish_requests_raw_pcm_at_the_declared_sample_rate(monkeypatch):
+    """The desktop forwards these frames untouched, so the request must ask
+    for exactly the format and rate the ABC advertises — anything else would
+    reach the speaker as noise."""
+    monkeypatch.setattr(ts, "_resolve_key", lambda *_: "secret")
+    captured = {}
+
+    def _post(url, json=None, headers=None, timeout=None, stream=None):
+        captured.update(url=url, json=json, headers=headers, stream=stream)
+        return _FakeFishResponse([b"\x01\x00", b"\x02\x00"])
+
+    fake_requests = MagicMock()
+    fake_requests.post = _post
+    monkeypatch.setitem(sys.modules, "requests", fake_requests)
+
+    streamer = _fish_streamer()
+    assert b"".join(streamer.stream("Hello sir.")) == b"\x01\x00\x02\x00"
+    assert captured["url"].endswith("/v1/tts")
+    assert captured["json"]["format"] == "pcm"
+    assert captured["json"]["sample_rate"] == streamer.sample_rate
+    assert captured["json"]["text"] == "Hello sir."
+    assert captured["stream"] is True
+    assert captured["headers"]["Authorization"] == "Bearer secret"
+    # Free tier by default: the paid models answer 402 on a fresh account, so
+    # defaulting to one would make a working key look broken.
+    assert captured["headers"]["model"] == "s2.1-pro-free"
+    assert "reference_id" not in captured["json"]
+
+
+def test_fish_sends_a_configured_voice_and_model(monkeypatch):
+    monkeypatch.setattr(ts, "_resolve_key", lambda *_: "secret")
+    captured = {}
+
+    def _post(url, json=None, headers=None, timeout=None, stream=None):
+        captured.update(json=json, headers=headers)
+        return _FakeFishResponse([b"\x00\x00"])
+
+    fake_requests = MagicMock()
+    fake_requests.post = _post
+    monkeypatch.setitem(sys.modules, "requests", fake_requests)
+
+    list(_fish_streamer({"model": "s1", "reference_id": "voice-42"}).stream("Hi."))
+
+    assert captured["headers"]["model"] == "s1"
+    assert captured["json"]["reference_id"] == "voice-42"
+
+
+def test_fish_surfaces_a_rejected_request(monkeypatch):
+    """A 402/401 must raise so the dispatcher logs it and falls back, rather
+    than yielding zero bytes that read as working-but-silent."""
+    monkeypatch.setattr(ts, "_resolve_key", lambda *_: "secret")
+
+    fake_requests = MagicMock()
+    fake_requests.post = lambda *a, **k: _FakeFishResponse([], status=402)
+    monkeypatch.setitem(sys.modules, "requests", fake_requests)
+
+    with pytest.raises(RuntimeError):
+        list(_fish_streamer().stream("Hi."))
+
+
+def test_fish_resolves_when_pinned(monkeypatch):
+    monkeypatch.setattr(ts, "_resolve_key", lambda *_: "secret")
+    resolved = ts.resolve_streaming_provider({"streaming": {"provider": "fish"}})
+    assert isinstance(resolved, ts.FishAudioStreamer)
+
+
 # ── Gemini SSE parsing ────────────────────────────────────────────────────
 
 

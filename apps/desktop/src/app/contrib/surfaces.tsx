@@ -33,7 +33,13 @@ import type { SidebarActions, WiringActions } from './types'
 // Same lazy-view split as DesktopController — pages load on demand. The
 // full-page views the workspace route table mounts live here; overlay views
 // (agents/settings/…) are the controller's and stay in wiring.tsx.
+const ActivityView = lazy(async () => ({ default: (await import('../activity')).ActivityView }))
 const ArtifactsView = lazy(async () => ({ default: (await import('../artifacts')).ArtifactsView }))
+const CalendarView = lazy(async () => ({ default: (await import('../calendar')).CalendarView }))
+const HomeView = lazy(async () => ({ default: (await import('../home')).HomeView }))
+const IntegrationsView = lazy(async () => ({ default: (await import('../integrations')).IntegrationsView }))
+const MemoryView = lazy(async () => ({ default: (await import('../memory')).MemoryView }))
+const TasksView = lazy(async () => ({ default: (await import('../tasks')).TasksView }))
 const MessagingView = lazy(async () => ({ default: (await import('../messaging')).MessagingView }))
 const SkillsView = lazy(async () => ({ default: (await import('../skills')).SkillsView }))
 
@@ -159,6 +165,12 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
       <Route element={page(<SkillsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="skills" />
       <Route element={page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="messaging" />
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />
+      <Route element={page(<HomeView />)} path="home" />
+      <Route element={page(<TasksView />)} path="tasks" />
+      <Route element={page(<CalendarView />)} path="calendar" />
+      <Route element={page(<MemoryView />)} path="memory" />
+      <Route element={page(<ActivityView />)} path="activity" />
+      <Route element={page(<IntegrationsView />)} path="integrations" />
       <Route element={null} path="agents" />
       <Route element={null} path="command-center" />
       <Route element={null} path="cron" />

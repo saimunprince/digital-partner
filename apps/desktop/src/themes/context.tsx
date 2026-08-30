@@ -19,6 +19,7 @@ import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 
 import { $backendThemes, $pendingSkinApply } from './backend-sync'
 import { hexToRgb, mix, readableOn } from './color'
+import { migrateAppearanceIdentity } from './migrate-identity'
 import { BUILTIN_THEME_LIST, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme } from './presets'
 import type { DesktopTheme, DesktopThemeColors } from './types'
 import { $userThemes, listAllThemes, resolveTheme } from './user-themes'
@@ -35,6 +36,8 @@ const PROFILE_MODES_KEY = 'hermes-desktop-profile-modes-v1'
 // Last active profile, recorded so the boot-time paint can pick that profile's
 // theme before the gateway reports which profile actually launched.
 const LAST_PROFILE_KEY = 'hermes-desktop-active-profile-v1'
+migrateAppearanceIdentity()
+
 const RETIRED_SKINS = new Set(['nous-light', 'default', 'gold'])
 
 export type ThemeMode = 'light' | 'dark' | 'system'
@@ -47,8 +50,11 @@ const resolveMode = (mode: ThemeMode, systemDark = matchesQuery('(prefers-color-
 const normalizeSkin = (name: string | null): string =>
   name && resolveTheme(name) && !RETIRED_SKINS.has(name) ? name : DEFAULT_SKIN_NAME
 
+// Dark is the product's designed default — the palette, the presence ring, and
+// the surface depth are all composed for it. An explicit stored choice always
+// wins; only the unset case lands here.
 const normalizeMode = (value: string | null): ThemeMode =>
-  value === 'light' || value === 'dark' || value === 'system' ? value : 'light'
+  value === 'light' || value === 'dark' || value === 'system' ? value : 'dark'
 
 // ─── Per-profile appearance persistence ─────────────────────────────────────
 // Skin and mode are each stored per profile. "default" isn't a real profile —

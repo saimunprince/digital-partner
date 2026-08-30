@@ -146,19 +146,43 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
 
   const navGroups: OverlayNavGroup[] = useMemo(
     () => [
-      ...SECTIONS.map(s => {
-        const view = `config:${s.id}` as SettingsViewId
+      // Clustered in the order the product thinks about itself: how the
+      // assistant behaves, how it looks, what it may do, then the plumbing.
+      // `gapBefore` draws the cluster break; ids stay stable for deep links.
+      ...(() => {
+        const CLUSTERS: readonly (readonly string[])[] = [
+          ['chat', 'voice', 'model', 'memory'],
+          ['appearance'],
+          ['safety'],
+          ['workspace', 'advanced']
+        ]
 
-        return {
-          active: activeView === view,
-          icon: s.icon,
-          id: view,
-          label: t.settings.sections[s.id] ?? s.label,
-          onSelect: () => setActiveView(view)
-        }
-      }),
+        const order = CLUSTERS.flat()
+        const firstOfCluster = new Set(CLUSTERS.map(cluster => cluster[0]).slice(1))
+
+        const ranked = [...SECTIONS].sort((a, b) => {
+          const ai = order.indexOf(a.id)
+          const bi = order.indexOf(b.id)
+
+          return (ai === -1 ? order.length : ai) - (bi === -1 ? order.length : bi)
+        })
+
+        return ranked.map(s => {
+          const view = `config:${s.id}` as SettingsViewId
+
+          return {
+            active: activeView === view,
+            gapBefore: firstOfCluster.has(s.id),
+            icon: s.icon,
+            id: view,
+            label: t.settings.sections[s.id] ?? s.label,
+            onSelect: () => setActiveView(view)
+          }
+        })
+      })(),
       {
         active: activeView === 'notifications',
+        gapBefore: true,
         icon: Bell,
         id: 'notifications',
         label: t.settings.nav.notifications,
@@ -255,6 +279,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       },
       {
         active: activeView === 'sessions',
+        gapBefore: true,
         icon: Archive,
         id: 'sessions',
         label: t.settings.nav.archivedChats,

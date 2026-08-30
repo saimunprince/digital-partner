@@ -173,6 +173,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       // Hover + held ⌘/Ctrl morphs the glyph into its reset form (see
       // LayoutGlyph) — the mod-click telegraphs itself before it happens.
       icon: <LayoutGlyph modHeld={modHeld} />,
+      hidden: true,
       id: 'layout',
       label: t.titlebar.layoutEditor,
       onSelect: event => {
@@ -195,6 +196,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       // from the action registry, same as every other tool here.
       actionId: 'view.toggleHud',
       icon: <TitlebarIcon name="comment-discussion" />,
+      hidden: true,
       id: 'hud',
       label: t.titlebar.enterHud,
       onSelect: () => {
@@ -205,6 +207,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     {
       active: hapticsMuted,
       icon: <TitlebarIcon name={hapticsMuted ? 'mute' : 'unmute'} />,
+      hidden: true,
       id: 'haptics',
       label: hapticsMuted ? t.titlebar.unmuteHaptics : t.titlebar.muteHaptics,
       onSelect: toggleHaptics

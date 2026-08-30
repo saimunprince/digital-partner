@@ -27,6 +27,7 @@ export const SIDEBAR_SESSIONS_PAGE_SIZE = 50
 // among the last 50 rows" — so narrowing the view widens the window it reads.
 export const SIDEBAR_FILTERED_PAGE_SIZE = 300
 
+const NAV_RAIL_COLLAPSED_STORAGE_KEY = 'hermes.desktop.navRailCollapsed'
 const SIDEBAR_PINNED_STORAGE_KEY = 'hermes.desktop.pinnedSessions'
 const SIDEBAR_AGENTS_GROUPED_STORAGE_KEY = 'hermes.desktop.agentsGroupedByWorkspace'
 const SIDEBAR_CRON_OPEN_STORAGE_KEY = 'hermes.desktop.sidebarCronOpen'
@@ -64,12 +65,15 @@ export const FILES_PANE_ID = 'files'
  *  path on disk, a live URL, or an id into the in-memory artifact registry. */
 export type RightRailTabId = `artifact:${string}` | `file:${string}` | `url:${string}`
 
-ensurePaneRegistered(CHAT_SIDEBAR_PANE_ID, { open: true })
+// Closed by default: the app opens on Home as rail + content. A permanent
+// second sidebar of sessions is an IDE shape, not a partner's. Opening Chat
+// (or ⌘B) reveals it, and the choice persists from there.
+ensurePaneRegistered(CHAT_SIDEBAR_PANE_ID, { open: false })
 ensurePaneRegistered(FILE_BROWSER_PANE_ID, { open: false })
 
 export const $sidebarOpen: ReadableAtom<boolean> = computed(
   $paneStates,
-  states => states[CHAT_SIDEBAR_PANE_ID]?.open ?? true
+  states => states[CHAT_SIDEBAR_PANE_ID]?.open ?? false
 )
 
 export const $fileBrowserOpen: ReadableAtom<boolean> = computed(
@@ -89,6 +93,14 @@ export const $sidebarWidth: ReadableAtom<number> = computed($paneStates, states 
 
   return typeof override === 'number' ? override : SIDEBAR_DEFAULT_WIDTH
 })
+
+// The product nav rail (Home/Chat/Tasks/…) collapse state — icon-only when
+// true. Owned here beside the other shell layout prefs.
+export const $navRailCollapsed = persistentAtom(NAV_RAIL_COLLAPSED_STORAGE_KEY, false, Codecs.bool)
+
+export function toggleNavRailCollapsed(): void {
+  $navRailCollapsed.set(!$navRailCollapsed.get())
+}
 
 export const $pinnedSessionIds = persistentAtom(SIDEBAR_PINNED_STORAGE_KEY, [] as string[], Codecs.stringArray)
 export const $sidebarSessionOrderIds = persistentAtom(

@@ -96,6 +96,85 @@ export const nousTheme: DesktopTheme = {
   }
 }
 
+
+// ── Horizon — the Digital Partner identity ─────────────────────────────────
+// Near-monochrome warm graphite with exactly one living element: the Aperture
+// (see components/presence). The horizon gradient (dusk indigo → dawn peach)
+// belongs to that ring and to brand moments ONLY — never to buttons or chrome.
+// Text is warm off-white / warm ink, never pure #FFF or #000; surfaces separate
+// by a hairline rather than a box.
+const HORIZON_ACCENT_LIGHT = '#5D59D8'
+const HORIZON_ACCENT_DARK = '#8FA2FF'
+
+/** Warm graphite dark / warm paper light — the product's default identity. */
+export const horizonTheme: DesktopTheme = {
+  name: 'horizon',
+  label: 'Horizon',
+  description: 'Warm graphite with a single living accent',
+  colors: {
+    background: '#F7F6F3',
+    foreground: '#1B1A1F',
+    card: '#FCFBF9',
+    cardForeground: '#1B1A1F',
+    muted: '#EFEDE8',
+    mutedForeground: '#6B6873',
+    popover: '#FFFFFF',
+    popoverForeground: '#1B1A1F',
+    // Primary is INK, not accent: a premium primary button is monochrome and
+    // the accent stays reserved for focus/selection/active state.
+    primary: '#1B1A1F',
+    primaryForeground: '#F7F6F3',
+    secondary: '#EDEBE6',
+    secondaryForeground: '#2A2830',
+    accent: '#E9E7E1',
+    accentForeground: '#1B1A1F',
+    border: 'color-mix(in srgb, #1B1A1F 12%, transparent)',
+    input: 'color-mix(in srgb, #1B1A1F 16%, transparent)',
+    ring: HORIZON_ACCENT_LIGHT,
+    midground: HORIZON_ACCENT_LIGHT,
+    composerRing: HORIZON_ACCENT_LIGHT,
+    destructive: '#B3374F',
+    destructiveForeground: '#FFFFFF',
+    sidebarBackground: '#F2F0EC',
+    sidebarBorder: 'color-mix(in srgb, #1B1A1F 10%, transparent)',
+    userBubble: '#EDEBE6',
+    userBubbleBorder: 'color-mix(in srgb, #1B1A1F 10%, transparent)'
+  },
+  darkColors: {
+    // Deep, slightly cool ground. Surfaces step up in real increments so the
+    // interface reads as layered depth rather than one flat sheet.
+    background: '#0B0C10',
+    foreground: '#E8EAF0',
+    card: '#121419',
+    cardForeground: '#E8EAF0',
+    muted: '#171A21',
+    mutedForeground: '#8B90A0',
+    popover: '#161920',
+    popoverForeground: '#E8EAF0',
+    primary: '#E8EAF0',
+    primaryForeground: '#0B0C10',
+    secondary: '#1B1F28',
+    secondaryForeground: '#DDE0E8',
+    accent: '#1E2230',
+    accentForeground: '#E8EAF0',
+    border: 'color-mix(in srgb, #9FB4FF 16%, transparent)',
+    input: 'color-mix(in srgb, #9FB4FF 22%, transparent)',
+    ring: HORIZON_ACCENT_DARK,
+    midground: HORIZON_ACCENT_DARK,
+    composerRing: HORIZON_ACCENT_DARK,
+    destructive: '#E05A73',
+    destructiveForeground: '#0B0C10',
+    sidebarBackground: '#08090C',
+    sidebarBorder: 'color-mix(in srgb, #9FB4FF 12%, transparent)',
+    userBubble: '#161A23',
+    userBubbleBorder: 'color-mix(in srgb, #9FB4FF 18%, transparent)'
+  },
+  typography: {
+    fontSans: SYSTEM_SANS,
+    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`
+  }
+}
+
 /** Deep blue-violet with cool accents. Matches the dashboard midnight theme. */
 export const midnightTheme: DesktopTheme = {
   name: 'midnight',
@@ -277,6 +356,7 @@ export const slateTheme: DesktopTheme = {
 }
 
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
+  horizon: horizonTheme,
   nous: nousTheme,
   midnight: midnightTheme,
   ember: emberTheme,
@@ -288,4 +368,4 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
 
 /** Skin used when nothing is persisted or the persisted name is retired. */
-export const DEFAULT_SKIN_NAME = 'nous'
+export const DEFAULT_SKIN_NAME = 'horizon'

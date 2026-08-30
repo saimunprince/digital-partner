@@ -222,6 +222,8 @@ declare global {
         setPercent: (percent: number) => void
         onChanged: (callback: (payload: { level: number; percent: number }) => void) => () => void
       }
+      /** Bring the primary window forward (wake word, hands-free). */
+      presentWindow: () => Promise<{ ok: boolean }>
       revealLogs: () => Promise<{ ok: boolean; path: string; error?: string }>
       getRecentLogs: () => Promise<{ path: string; lines: string[] }>
       /** Persist a renderer error-boundary catch to desktop.log (fire-and-forget). */

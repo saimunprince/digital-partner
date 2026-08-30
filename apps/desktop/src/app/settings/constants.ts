@@ -432,6 +432,14 @@ export const FIELD_LABELS: Record<string, string> = defineFieldCopy({
     enabled: 'File Checkpoints',
     maxSnapshots: 'Checkpoint Limit'
   },
+  partner: {
+    briefing: {
+      enabled: 'Daily Briefing',
+      time: 'Briefing Time',
+      quietStart: 'Quiet Hours Start',
+      quietEnd: 'Quiet Hours End'
+    }
+  },
   voice: {
     recordKey: 'Voice Shortcut',
     maxRecordingSeconds: 'Max Recording Length',
@@ -591,6 +599,14 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   compression: {
     enabled: 'Summarize older context when conversations get large.'
   },
+  partner: {
+    briefing: {
+      enabled: 'Speak an unprompted briefing once a day — your schedule and anything waiting on you.',
+      time: 'Local 24-hour time. A machine asleep at this hour is briefed when it wakes, not skipped.',
+      quietStart: 'Nothing is spoken from this hour onward.',
+      quietEnd: 'Speaking resumes at this hour.'
+    }
+  },
   voice: {
     autoTts: 'Automatically speak assistant responses.'
   },
@@ -694,6 +710,10 @@ export const SECTIONS: DesktopConfigSection[] = [
     label: 'Voice',
     icon: Mic,
     keys: [
+      'partner.briefing.enabled',
+      'partner.briefing.time',
+      'partner.briefing.quiet_start',
+      'partner.briefing.quiet_end',
       'tts.provider',
       'stt.enabled',
       'stt.echo_transcripts',

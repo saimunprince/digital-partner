@@ -486,3 +486,81 @@ class XAIStreamer(StreamingTTSProvider):
                     return
                 logger.warning("xAI WS receive failed: %s", exc)
                 return
+
+
+# The free-tier model. The paid ones (``s1``, ``s2.1-pro``, ``speech-1.6``)
+# answer 402 on an account with no API credit, so defaulting to one of those
+# would make a working key look broken. Override with ``tts.fish.model``.
+DEFAULT_FISH_TTS_MODEL = "s2.1-pro-free"
+DEFAULT_FISH_TTS_BASE_URL = "https://api.fish.audio"
+
+
+@register("fish")
+class FishAudioStreamer(StreamingTTSProvider):
+    """Fish Audio ``POST /v1/tts`` with ``format: pcm`` → chunked int16 PCM.
+
+    Fish answers with chunked transfer encoding, so the plain HTTP endpoint is
+    already a stream — no msgpack WebSocket session to hold open, and no extra
+    dependency. One request per sentence matches this ABC's contract exactly.
+
+    Config (all optional) under ``tts.fish``:
+      ``model`` (header, default ``s1``), ``reference_id`` (a voice from the
+      Fish library or your own clone), ``latency`` (``balanced`` trades a
+      little quality for time-to-first-audio), ``base_url``.
+    """
+
+    sample_rate = 24000
+
+    @staticmethod
+    def available() -> bool:
+        return bool(
+            _resolve_key("FISH_API_KEY", "fish")
+            or _resolve_key("FISH_AUDIO_API_KEY", "fish")
+        )
+
+    def stream(self, text: str) -> Iterator[bytes]:
+        import requests
+
+        api_key = (
+            _resolve_key("FISH_API_KEY", "fish")
+            or _resolve_key("FISH_AUDIO_API_KEY", "fish")
+        )
+        base_url = str(
+            self.section.get("base_url")
+            or get_env_value("FISH_BASE_URL")
+            or DEFAULT_FISH_TTS_BASE_URL
+        ).strip().rstrip("/")
+        model = str(self.section.get("model") or DEFAULT_FISH_TTS_MODEL).strip()
+
+        payload: Dict[str, object] = {
+            "text": text,
+            # PCM at our own rate: the desktop's speak-stream socket forwards
+            # these frames untouched, so anything else would need decoding.
+            "format": "pcm",
+            "sample_rate": self.sample_rate,
+            "latency": str(self.section.get("latency") or "balanced").strip(),
+        }
+        reference_id = str(
+            self.section.get("reference_id") or self.section.get("voice") or ""
+        ).strip()
+        if reference_id:
+            payload["reference_id"] = reference_id
+
+        def _pcm_chunks() -> Iterator[bytes]:
+            with requests.post(
+                f"{base_url}/v1/tts",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "model": model,
+                },
+                timeout=60,
+                stream=True,
+            ) as response:
+                response.raise_for_status()
+                for chunk in response.iter_content(chunk_size=4096):
+                    if chunk:
+                        yield chunk
+
+        yield from _capped(_pcm_chunks(), "Fish Audio streaming TTS")

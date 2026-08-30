@@ -46,6 +46,7 @@ import {
   setSessions
 } from './session'
 import { ackStoredSessionId, markSessionUnreadFinished } from './session-unread'
+import { $voiceRuntimeId } from './voice-session'
 import { isSecondaryWindow } from './windows'
 
 // ---------------------------------------------------------------------------
@@ -208,11 +209,18 @@ function handleTransition(previous: ClientSessionState | null, next: ClientSessi
   }
 }
 
-/** Is any surface on THIS window still holding the runtime — the primary view
- *  or an open tile? (A tile mid-resume references by stored id only; its
- *  runtime binding is patched in after `resumeTile` returns.) */
+/** Is any surface on THIS window still holding the runtime — the primary view,
+ *  an open tile, or the voice command center? (A tile mid-resume references by
+ *  stored id only; its runtime binding is patched in after `resumeTile`
+ *  returns.)
+ *
+ *  Home's spoken thread is a real holder even though it is neither the active
+ *  session nor a tile: the reply it is about to SPEAK is read from this
+ *  session's transcript. Releasing that transcript the instant the turn
+ *  settles is silence — the text to speak is gone before the speech stream
+ *  ever asks for it. */
 function runtimeReferenced(runtimeId: string, storedSessionId: null | string): boolean {
-  if (runtimeId === $activeSessionId.get()) {
+  if (runtimeId === $activeSessionId.get() || runtimeId === $voiceRuntimeId.get()) {
     return true
   }
 

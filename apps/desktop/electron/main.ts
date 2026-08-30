@@ -54,6 +54,7 @@ import {
 } from './bootstrap-platform'
 import { decideBootstrapRepair } from './bootstrap-repair-guard'
 import { runBootstrap } from './bootstrap-runner'
+import { MAIN_BRAND } from './brand'
 import { applyConnectionChange, resolveTerminalConnection } from './connection-apply'
 import {
   authModeFromStatus,
@@ -748,7 +749,7 @@ const BOOT_FAKE_STEP_MS = (() => {
   return Math.max(120, raw)
 })()
 
-const APP_NAME = process.env.HERMES_DESKTOP_APP_NAME || 'Hermes'
+const APP_NAME = process.env.HERMES_DESKTOP_APP_NAME || MAIN_BRAND.productName
 const HUD_WINDOW_TITLE = `${APP_NAME} HUD`
 const TITLEBAR_HEIGHT = 34
 const MACOS_TRAFFIC_LIGHTS_HEIGHT = 14
@@ -10015,6 +10016,7 @@ async function startHermes() {
 function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {}) {
   installPreviewShortcut(win)
   installDevToolsShortcut(win)
+
   // Claim Ctrl/Cmd+F in the main process — on Pop!_OS / GNOME-based Linux
   // distros the Ctrl+F keydown does not reach the renderer's `view.findInPage`
   // binding (#81727). Routing it through `before-input-event` forwards the
@@ -12983,6 +12985,22 @@ ipcMain.handle('hermes:setting:defaultProjectDir:pick', async () => {
 })
 
 ipcMain.handle('hermes:fetchLinkTitle', (_event, url) => fetchLinkTitle(url))
+
+// Hands-free reveal: the wake word can fire while the app is minimised or
+// behind another window, and an assistant that starts listening out of sight
+// is worse than one that does not listen at all. The renderer calls this only
+// on an explicit, user-initiated trigger (the wake phrase) — never on its own.
+ipcMain.handle('hermes:window:present', async () => {
+  const win = mainWindow
+
+  if (!win || win.isDestroyed()) {
+    return { ok: false }
+  }
+
+  focusWindow(win)
+
+  return { ok: true }
+})
 
 ipcMain.handle('hermes:logs:reveal', async () => {
   try {

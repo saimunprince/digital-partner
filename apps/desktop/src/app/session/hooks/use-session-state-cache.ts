@@ -21,6 +21,7 @@ import {
   setYoloActive
 } from '@/store/session'
 import { $sessionTiles, publishSessionState, releaseSessionTranscript } from '@/store/session-states'
+import { $voiceRuntimeId } from '@/store/voice-session'
 
 import type { ClientSessionState } from '../../types'
 import { SessionStateCache } from '../session-state-cache'
@@ -90,6 +91,9 @@ export function useSessionStateCache({
     sessionStateByRuntimeIdRef.current = new SessionStateCache({
       isReferenced: (runtimeId, state) =>
         runtimeId === activeSessionIdRef.current ||
+        // Home's spoken thread holds its session the way a tile does: the
+        // reply it is about to speak is read from that transcript.
+        runtimeId === $voiceRuntimeId.get() ||
         state.storedSessionId === selectedStoredSessionIdRef.current ||
         $sessionTiles
           .get()

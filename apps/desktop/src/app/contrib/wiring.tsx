@@ -32,7 +32,6 @@ import { activateWakeIndicator } from '@/lib/wake-indicator'
 import { playWakeSound } from '@/lib/wake-sound'
 import { $billingSettingsRequest } from '@/store/billing-block'
 import { $desktopBoot } from '@/store/boot'
-import { requestVoiceConversationStart } from '@/store/composer'
 import { $cronReviewRequest, setCronFocusJobId } from '@/store/cron'
 import { $pinnedSessionIds, pinSession, restoreWorktree, unpinSession } from '@/store/layout'
 import { $previewTarget } from '@/store/preview'
@@ -66,6 +65,7 @@ import {
   setMessages
 } from '@/store/session'
 import { clearSessionTodos, setSessionTodos, todosForHydration } from '@/store/todos'
+import { requestVoiceCenterStart } from '@/store/voice-session'
 import { armWakeWord, stopClientCapture } from '@/store/wake-word'
 import { isAuxiliaryWindow, isHudWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
@@ -90,7 +90,9 @@ import { PersistentTerminal } from '../right-sidebar/terminal/persistent'
 import { closeAllTerminals } from '../right-sidebar/terminal/terminals'
 import {
   CRON_ROUTE,
+  HOME_ROUTE,
   navigateToWorkspacePage,
+  NEW_CHAT_ROUTE,
   routeSessionId,
   sessionRoute,
   SETTINGS_ROUTE,
@@ -128,6 +130,7 @@ import {
   resolveActiveTranscriptSession,
   useBackgroundSync
 } from './hooks/use-background-sync'
+import { useDailyBriefing } from './hooks/use-daily-briefing'
 import { useDesktopIntegrations } from './hooks/use-desktop-integrations'
 import { usePetBridge } from './hooks/use-pet-bridge'
 import { useQuickEntryBridge } from './hooks/use-quick-entry-bridge'
@@ -221,6 +224,18 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const getRouteToken = useCallback(() => routeTokenRef.current, [])
 
   const getRoutedStoredSessionId = useCallback(() => routedSessionIdRef.current, [])
+
+  // Cold start lands on Home. One-shot, main window only: a fresh launch
+  // arrives at NEW_CHAT_ROUTE with no session intent, and the landing surface
+  // is the day-at-a-glance — a user-invoked "new chat" later navigates to the
+  // same path without remounting this component, so it is never redirected.
+   
+  useEffect(() => {
+    if (routeTokenRef.current === `${NEW_CHAT_ROUTE}::`) {
+      navigate(HOME_ROUTE, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only by design
+  }, [])
 
   const clearRoutedSessionIntent = useCallback(() => {
     routedSessionIdRef.current = null
@@ -623,6 +638,15 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // session / new session), and it hears gateway truth from this window.
   useQuickEntryBridge({ startFreshSessionDraft, submitText })
 
+  // Speak first, once a day. Home owns the voice machine, so the briefing has
+  // to put it on screen the same way the wake word does.
+  useDailyBriefing(
+    useCallback(() => {
+      void window.hermesDesktop?.presentWindow?.()
+      navigateToWorkspacePage(navigate, HOME_ROUTE)
+    }, [navigate])
+  )
+
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })
 
@@ -717,7 +741,17 @@ export function ContribWiring({ children }: { children: ReactNode }) {
           startFreshSessionDraft()
         }
 
-        requestVoiceConversationStart()
+        // Hands-free: the phrase may have been spoken at a minimised window or
+        // from across the room. Bring the app forward so the user can see what
+        // it heard — this is the one place a focus steal is what was asked for.
+        void window.hermesDesktop?.presentWindow?.()
+
+        // Speaking the wake phrase is a request to TALK, so it lands on the
+        // voice command center — not in Chat's composer, which is the place
+        // for typing. Navigate first: the request is latched, and Home claims
+        // it on the render that follows.
+        navigateToWorkspacePage(navigate, HOME_ROUTE)
+        requestVoiceCenterStart()
 
         return
       }
@@ -1004,7 +1038,10 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // right-sidebar toggle (see titlebar-controls.tsx). A shared width that
   // under-counts leaves the find bar, the titlebar header padding, and the
   // pane-cluster anchor overlapping the fifth button.
-  const SYSTEM_TOOL_COUNT = 5
+  // Settings + the right-pane toggle. The layout/HUD/haptics tools are hidden
+  // from the bar (keybinds and ⌘K still reach them) — keep in sync with
+  // titlebar-controls.tsx.
+  const SYSTEM_TOOL_COUNT = 2
   const paneToolCount = rightTitlebarTools.filter(tool => !tool.hidden).length
   const systemToolsWidth = titlebarToolsWidthCss(SYSTEM_TOOL_COUNT)
 

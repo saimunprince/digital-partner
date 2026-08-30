@@ -1665,6 +1665,24 @@ DEFAULT_CONFIG = {
         },
     },
 
+    # ── Digital partner ────────────────────────────────────────────────────
+    # The voice-first product layer. Pure data: the desktop reads these to
+    # decide when to speak first. Nothing here changes agent behaviour, so it
+    # is safe to add without touching the prompt or its cache.
+    "partner": {
+        "briefing": {
+            # Speak an unprompted daily briefing in the voice command centre.
+            "enabled": False,
+            # Local 24h time, "HH:MM". Fires once per day, on the first tick
+            # at or after this time — a machine asleep at 08:30 still gets it
+            # when it wakes, rather than silently skipping the day.
+            "time": "08:30",
+            # Nothing is spoken before/after these hours, briefing included.
+            "quiet_start": "22:00",
+            "quiet_end": "07:00",
+        },
+    },
+
     "voice": {
         "record_key": "ctrl+b",
         "submit_mode": "direct",       # TUI: direct submits immediately; draft leaves an editable transcript

@@ -61,6 +61,18 @@
   src: url('../../../node_modules/@nous-research/ui/dist/fonts/Collapse-Bold.woff2') format('woff2');
 }
 
+/* Fraunces — the "voice" face (SIL OFL 1.1), bundled so it works offline.
+   Variable italic, latin subset. Used ONLY where the assistant speaks: the
+   Home greeting, empty-state first lines, onboarding headlines. Never for
+   body copy, lists, buttons, or settings — its restraint is the point. */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: italic;
+  font-weight: 300 500;
+  font-display: swap;
+  src: url('./fonts/Fraunces-Italic.woff2') format('woff2');
+}
+
 /* JetBrains Mono — bundled terminal font (Apache-2.0) so bold/italic share the
    regular face's metrics instead of squeezing against a system fallback. */
 @font-face {
@@ -163,6 +175,46 @@
 @layer base {
   :root {
     color-scheme: light;
+
+    /* ── Presence (the Aperture) ─────────────────────────────────────────
+       The product's signature element: a thin luminous ring on the ground.
+       The horizon gradient (dusk indigo → dawn peach) appears ONLY here and
+       in brand moments — never on buttons, charts, or chrome. */
+    /* The orb's own two colours. Kept apart from --horizon-* because those
+       carry the warm brand accent, and a magenta/orange sphere reads as a
+       foreign object in a cool graphite interface — the orb has to belong to
+       the surface it sits on. Equator dominates the silhouette; pole shows at
+       the top and bottom. */
+    /* The ground the orb is cleared to.
+       A literal, deliberately: the theme's own background resolves to a
+       color-mix()/color(srgb) expression that three.js cannot parse, and a
+       clear colour that lands even slightly off paints a visible disc. Kept in
+       step with the Horizon seeds by hand — the two values below. */
+    --orb-surface: #f7f6f3;
+
+    --orb-equator: #6e6af0;
+    --orb-pole: #9fd4ff;
+    /* The turn-taking tones: cool while it listens, --horizon-b while it
+       answers. Blended in the frame loop, never swapped outright. */
+    --orb-cool: #7fd9ff;
+
+    --horizon-a: #6e6af0;
+    --horizon-b: #e9a08b;
+    --presence-ring: color-mix(in srgb, var(--ui-base) 30%, transparent);
+    --presence-ring-quiet: color-mix(in srgb, var(--ui-base) 20%, transparent);
+    --presence-error: var(--ui-orange);
+
+    /* Depth cues. `--edge-light` is the top-edge highlight that separates a
+       raised surface from the ground; `--focus-glow` is the luminous ring an
+       interactive surface gains on focus. Both stay subtle — the depth should
+       be felt, not seen as decoration. */
+    --edge-light: color-mix(in srgb, var(--ui-base) 8%, transparent);
+    --focus-glow: 0 0 0 1px color-mix(in srgb, var(--ui-accent) 45%, transparent),
+      0 0 1.25rem -0.25rem color-mix(in srgb, var(--ui-accent) 35%, transparent);
+
+    /* The voice face, with a real fallback stack for the moment before the
+       bundled woff2 resolves (and for any platform that refuses it). */
+    --font-voice: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
 
     --theme-foreground: #17171a;
     --theme-primary: #0053fd;
@@ -472,7 +524,12 @@
     --sticky-human-top: 0.23rem;
     --file-tree-row-height: 1.375rem;
 
-    --composer-width: 100%;
+    /* The reading column. Transcript and composer share it, so the
+       conversation stays a readable measure instead of stretching to the pane
+       edge on wide displays (~1650px of running text on a 1920 monitor).
+       Generous enough for code and diffs; capped where prose gets hard to
+       track. Panes narrower than the cap still use their full width. */
+    --composer-width: min(100%, 58rem);
     --composer-control-size: 1.5rem;
     --composer-control-primary-size: 1.625rem;
     --composer-control-gap: 0.25rem;
@@ -523,6 +580,7 @@
   }
 
   :root.dark {
+    --orb-surface: #0b0c10;
     /* Per-mode mix knobs — overridden inline by `applyTheme()` per skin. */
     --theme-mix-chrome: 74%;
     --theme-mix-card: 38%;
@@ -3074,4 +3132,263 @@ html:has([data-hud-shell]) [data-slot='popover-content'] {
 
 [data-hud-shell] [data-slot='composer-bounds'] *::-webkit-scrollbar {
   display: none;
+}
+
+/* ── Presence orb (the Aperture) ─────────────────────────────────────────
+   Transform/opacity only; registered with the renderer pause attribute so a
+   backgrounded window goes fully still. Reduced motion is covered by the
+   blanket kill switch at the top of this file — states stay legible via
+   stroke color/dash alone. */
+@keyframes presence-breathe {
+  0%,
+  100% {
+    opacity: 0.88;
+    transform: scale(0.97);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes presence-drift {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes presence-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes presence-ripple {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+}
+
+.presence-breathe {
+  animation: presence-breathe 6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.presence-rotate {
+  animation: presence-rotate 2.2s linear infinite;
+  transform-origin: center;
+}
+
+.presence-rotate-slow {
+  animation: presence-rotate 3.6s linear infinite;
+  transform-origin: center;
+}
+
+.presence-drift {
+  animation: presence-drift 22s linear infinite;
+  transform-origin: center;
+}
+
+.presence-ripple {
+  animation: presence-ripple 1.6s ease-out infinite;
+  transform-origin: center;
+}
+
+/* Voice copy arrives rather than appears: each new status, question and answer
+   rises a few pixels as it fades in, so a turn of the conversation has a
+   beginning instead of a repaint. */
+@keyframes presence-say {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes presence-attend {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.presence-say {
+  animation: presence-say 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* Only while it is waiting on you — a label that pulses through the answer
+   would compete with the reply. */
+.presence-attend {
+  animation: presence-attend 2.6s ease-in-out infinite;
+}
+
+:root[data-renderer-animations-paused] :is(
+    .presence-breathe,
+    .presence-drift,
+    .presence-rotate,
+    .presence-rotate-slow,
+    .presence-ripple,
+    .presence-attend
+  ) {
+  animation-play-state: paused !important;
+}
+
+/* ── The presence orb (reactor) ─────────────────────────────────────────────
+   Housing, coil, core. The light is the accent — everything structural is
+   drawn in the interface's own ink so the mark belongs to this product rather
+   than quoting a prop. Glow is tight (a drop-shadow, not a wash) so the core
+   stays crisp at hero size and legible at 16px. */
+/* The orb's GL surface.
+   Round, not rectangular. A WebGL layer does not composite as transparent on
+   every GPU path — on some it lands opaque, and then a rectangular canvas is a
+   visible box around the orb no matter what the clear colour or the shader's
+   alpha does. Clipping the surface to a circle removes that failure mode
+   instead of trying to out-argue the compositor: an opaque circle cleared to
+   the page's own colour is invisible, and the orb inside it is round anyway.
+   Kept as a rule rather than a utility because Tailwind does not generate a
+   negative arbitrary inset — the class form silently did nothing. */
+.presence-orb__stage {
+  /* No clip, no radius, no overflow: any of those promote this to an isolated
+     group, and the canvas below then blends against that group's empty
+     backdrop instead of the page — which is exactly how a black disc survives
+     a `screen` blend. */
+  /* Kept in step with STAGE_OVERSHOOT in orb-canvas.tsx: -12.5% a side is a
+     1.25x surface, the headroom the orb's loudest excursions need. */
+  inset: -12.5%;
+  pointer-events: none;
+  position: absolute;
+}
+
+.presence-orb__stage canvas {
+  /* Blended, not composited.
+     A WebGL layer composites opaque on some GPU paths, so a transparent clear
+     still lands as a black disc behind the orb — and matching the page colour
+     instead depends on resolving a theme value that can be wrong or not yet
+     applied. `screen` sidesteps both: black is the identity for it, so every
+     pixel the orb does not light contributes nothing at all, and the light it
+     does emit adds to the page. The orb is pure emitted light on black, which
+     is exactly what this blend mode is for. */
+  mix-blend-mode: screen;
+}
+
+/* Light mode inverts instead of compensating.
+   `screen` is only meaningful over something dark — over a pale page every
+   value it produces is the page again, so the orb vanishes. Inverting the
+   canvas turns the emitted light into ink (transparent pixels keep alpha 0,
+   so nothing but the orb is painted) and `multiply` lets that ink darken the
+   page the same way `screen` let it brighten one. `hue-rotate` puts the
+   palette back after the channel flip. */
+:root:not(.dark) .presence-orb__stage canvas {
+  filter: invert(1) hue-rotate(180deg);
+  mix-blend-mode: multiply;
+}
+
+/* At hero size the particle orb owns the surface; the SVG mark stays as the
+   fallback underneath for the no-GL case, dimmed so it never double-draws. */
+.presence-orb__fallback {
+  opacity: 0.35;
+}
+
+.presence-orb__housing {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ui-base) 22%, transparent);
+  vector-effect: non-scaling-stroke;
+}
+
+.presence-orb__well {
+  fill: color-mix(in srgb, var(--ui-base) 5%, transparent);
+}
+
+.presence-orb__lip {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ui-base) 14%, transparent);
+  vector-effect: non-scaling-stroke;
+}
+
+.presence-orb__coil {
+  transform-origin: center;
+}
+
+.presence-orb__coil circle {
+  fill: none;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--horizon-a) 40%, transparent));
+  stroke: color-mix(in srgb, var(--horizon-a) 42%, transparent);
+  vector-effect: non-scaling-stroke;
+}
+
+.presence-orb__core {
+  transform-origin: center;
+}
+
+.presence-orb__core circle {
+  fill: url(#presence-core);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--horizon-a) 55%, transparent));
+}
+
+.presence-orb__dead {
+  fill: color-mix(in srgb, var(--presence-error) 30%, transparent);
+}
+
+/* Executing brightens the coil — the work is visibly drawing power. */
+.presence-orb[data-presence-state='executing'] .presence-orb__coil circle {
+  stroke: color-mix(in srgb, var(--horizon-b) 65%, transparent);
+}
+
+/* Chrome sizes: drop the glow and the lip, keep housing + coil + core. */
+.presence-orb[data-presence-size='compact'] .presence-orb__coil circle,
+.presence-orb[data-presence-size='micro'] .presence-orb__coil circle,
+.presence-orb[data-presence-size='compact'] .presence-orb__core circle,
+.presence-orb[data-presence-size='micro'] .presence-orb__core circle {
+  filter: none;
+}
+
+.presence-orb[data-presence-state='error'] .presence-orb__housing {
+  stroke: color-mix(in srgb, var(--presence-error) 45%, transparent);
+}
+
+/* The assistant's speaking voice. Italic, light, optically sized for display
+   — legible at 28px+, deliberately not used below ~18px. */
+.text-voice {
+  font-family: var(--font-voice);
+  font-style: italic;
+  font-weight: 300;
+  font-variation-settings: 'opsz' 96;
+  letter-spacing: -0.005em;
+}
+
+/* A raised surface: layered fill, a light-catching top edge, and depth beneath.
+   One class so panels, cards, and floating surfaces read as the same material. */
+.surface-raised {
+  background: linear-gradient(to bottom, var(--edge-light), transparent 1.5rem), var(--color-card);
+  border: 1px solid var(--ui-stroke-tertiary);
+  box-shadow: var(--shadow-nous);
+}
+
+/* Focus that reads as light rather than paint. */
+.focus-glow:focus-within {
+  box-shadow: var(--focus-glow);
 }

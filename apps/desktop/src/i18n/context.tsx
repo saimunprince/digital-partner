@@ -2,6 +2,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 
 import { getHermesConfigRecord, type HermesConfigRecord, saveHermesConfig } from '@/hermes'
 
+import { brandedTranslations } from './brand-interpolate'
 import { TRANSLATIONS } from './catalog'
 import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
 import { setRuntimeI18nLocale } from './runtime'
@@ -83,7 +84,7 @@ const I18nContext = createContext<I18nContextValue>({
   locale: DEFAULT_LOCALE,
   saveError: null,
   setLocale: async () => {},
-  t: TRANSLATIONS[DEFAULT_LOCALE]
+  t: brandedTranslations(DEFAULT_LOCALE, TRANSLATIONS[DEFAULT_LOCALE])
 })
 
 export interface I18nProviderProps {
@@ -183,7 +184,7 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
       locale,
       saveError,
       setLocale,
-      t: TRANSLATIONS[locale]
+      t: brandedTranslations(locale, TRANSLATIONS[locale])
     }),
     [configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale]
   )

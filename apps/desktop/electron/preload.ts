@@ -210,6 +210,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       return () => ipcRenderer.removeListener('hermes:zoom:changed', listener)
     }
   },
+  presentWindow: () => ipcRenderer.invoke('hermes:window:present'),
   revealLogs: () => ipcRenderer.invoke('hermes:logs:reveal'),
   getRecentLogs: () => ipcRenderer.invoke('hermes:logs:recent'),
   // Fire-and-forget: persists a renderer error-boundary catch (with component

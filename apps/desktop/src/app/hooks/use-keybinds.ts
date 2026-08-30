@@ -5,7 +5,16 @@ import { closeActiveTab } from '@/app/chat/close-tab'
 import { hudTargetSessionId } from '@/app/hud/handoff'
 import { setTerminalTakeover } from '@/app/right-sidebar/store'
 import { closeActiveTerminal, createTerminal, cycleTerminal } from '@/app/right-sidebar/terminal/terminals'
-import { appViewForPath, isOverlayView } from '@/app/routes'
+import {
+  ACTIVITY_ROUTE,
+  appViewForPath,
+  CALENDAR_ROUTE,
+  HOME_ROUTE,
+  INTEGRATIONS_ROUTE,
+  isOverlayView,
+  MEMORY_ROUTE,
+  TASKS_ROUTE
+} from '@/app/routes'
 import {
   activateTreeTabSlot,
   cycleTreeTabInFocusedZone,
@@ -199,6 +208,12 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'nav.artifacts': () => navigateToWorkspacePage(navigate, ARTIFACTS_ROUTE),
     'nav.cron': () => navigate(CRON_ROUTE),
     'nav.agents': () => navigate(AGENTS_ROUTE),
+    'nav.home': () => navigateToWorkspacePage(navigate, HOME_ROUTE),
+    'nav.tasks': () => navigateToWorkspacePage(navigate, TASKS_ROUTE),
+    'nav.calendar': () => navigateToWorkspacePage(navigate, CALENDAR_ROUTE),
+    'nav.memory': () => navigateToWorkspacePage(navigate, MEMORY_ROUTE),
+    'nav.activity': () => navigateToWorkspacePage(navigate, ACTIVITY_ROUTE),
+    'nav.integrations': () => navigateToWorkspacePage(navigate, INTEGRATIONS_ROUTE),
 
     'session.new': () => {
       // Match the sidebar New Session button. A plain keyboard new chat should
