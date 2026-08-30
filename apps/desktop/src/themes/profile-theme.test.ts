@@ -15,7 +15,7 @@ const cases = [
     pref: skinPref as unknown as Pref,
     fallback: DEFAULT_SKIN_NAME,
     a: 'ember',
-    b: 'midnight',
+    b: 'catppuccin',
     junk: 'nope'
   },
   { name: 'mode', pref: modePref as unknown as Pref, fallback: 'dark', a: 'light', b: 'system', junk: 'dusk' }
@@ -44,5 +44,27 @@ describe.each(cases)('per-profile $name', ({ pref, fallback, a, b, junk }) => {
   it('normalizes an unknown stored value back to the default', () => {
     pref.assign('work', junk)
     expect(pref.resolve('work')).toBe(fallback)
+  })
+})
+
+// A fresh profile follows the OS. This defaulted to `light`, so a dark-mode
+// desktop got a white window on first launch — and, once translucency became
+// per-appearance, light's much heavier tint along with it. Main already
+// defaulted its own themeSource to 'system', so the two disagreed at boot.
+describe('a profile that has never chosen a mode', () => {
+  beforeEach(() => window.localStorage.clear())
+
+  // Upstream follows the OS here. This product is dark-first by design — the
+  // palette, the presence orb and the surface depth are composed for the dark
+  // ground — so an unset profile meets it that way. An explicit choice still
+  // wins (the test below).
+  it('lands on the product default rather than forcing light', () => {
+    expect(modePref.resolve('default')).toBe('dark')
+    expect(modePref.resolve('work')).toBe('dark')
+  })
+
+  it('still honours an explicit choice', () => {
+    modePref.assign('default', 'light')
+    expect(modePref.resolve('default')).toBe('light')
   })
 })

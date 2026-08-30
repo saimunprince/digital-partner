@@ -13,11 +13,9 @@ function dependencies(overrides: Partial<MediaProtocolDependencies> = {}) {
     ensureRemoteBearer: vi.fn(async (_baseUrl: string) => null),
     fetchLocal: vi.fn(async (_resolvedPath: string, _headers: Headers) => new Response('local', { status: 206 })),
     fetchRemote: vi.fn(async (_url: string, _headers: Headers) => new Response('remote', { status: 206 })),
-    fetchRemoteWithCookies: vi.fn(async (_url: string, _headers: Headers) =>
-      new Response('cookie', { status: 206 })
-    ),
+    fetchRemoteWithCookies: vi.fn(async (_url: string, _headers: Headers) => new Response('cookie', { status: 206 })),
     resolveLocalFile: vi.fn(async (filePath: string) => filePath),
-    resolveRemoteConnection: vi.fn(async (_profile?: string) => ({
+    resolveRemoteConnection: vi.fn(async (_scope: { connectionId?: string; profile?: string }) => ({
       authMode: 'token' as const,
       baseUrl: 'https://gateway.test',
       mode: 'remote' as const,
@@ -107,13 +105,13 @@ describe('createMediaProtocolHandler', () => {
     })
 
     const response = await createMediaProtocolHandler(deps)(
-      request('hermes-media://remote/%2Froot%2Foutputs%2Frender.mp4?profile=reviewer', {
+      request('hermes-media://remote/%2Froot%2Foutputs%2Frender.mp4?connectionId=work-ssh&profile=reviewer', {
         Range: 'bytes=0-1023'
       })
     )
 
     expect(response.status).toBe(206)
-    expect(deps.resolveRemoteConnection).toHaveBeenCalledWith('reviewer')
+    expect(deps.resolveRemoteConnection).toHaveBeenCalledWith({ connectionId: 'work-ssh', profile: 'reviewer' })
     expect(deps.fetchRemote).toHaveBeenCalledOnce()
     const [rawUrl, headers] = vi.mocked(deps.fetchRemote).mock.calls[0]
     const url = new URL(rawUrl)
@@ -122,6 +120,28 @@ describe('createMediaProtocolHandler', () => {
     expect(url.searchParams.has('token')).toBe(false)
     expect(headers.get('x-hermes-session-token')).toBe('s e/cret')
     expect(headers.get('range')).toBe('bytes=0-1023')
+  })
+
+  it('adds profile scope when one registry backend serves multiple profiles', async () => {
+    const deps = dependencies({
+      resolveRemoteConnection: vi.fn(async () => ({
+        authMode: 'token' as const,
+        baseUrl: 'https://gateway.test',
+        mode: 'remote' as const,
+        sharedRemote: true,
+        token: 'secret'
+      }))
+    })
+
+    await createMediaProtocolHandler(deps)(
+      request('hermes-media://remote/%2Froot%2Foutputs%2Frender.mp4?connectionId=cloud&profile=research')
+    )
+
+    const [rawUrl] = vi.mocked(deps.fetchRemote).mock.calls[0]
+    const url = new URL(rawUrl)
+
+    expect(url.searchParams.get('path')).toBe('/root/outputs/render.mp4')
+    expect(url.searchParams.get('profile')).toBe('research')
   })
 
   it('preserves explicit HEAD requests through the token-auth remote proxy', async () => {
@@ -164,9 +184,7 @@ describe('createMediaProtocolHandler', () => {
       }))
     })
 
-    const response = await createMediaProtocolHandler(deps)(
-      request('hermes-media://remote/%2Ftmp%2Fclip.mp4')
-    )
+    const response = await createMediaProtocolHandler(deps)(request('hermes-media://remote/%2Ftmp%2Fclip.mp4'))
 
     expect(response.status).toBe(206)
     expect(deps.fetchRemote).toHaveBeenCalledOnce()
@@ -210,9 +228,7 @@ describe('createMediaProtocolHandler', () => {
       }))
     })
 
-    const response = await createMediaProtocolHandler(deps)(
-      request('hermes-media://remote/%2Ftmp%2Fclip.mp4')
-    )
+    const response = await createMediaProtocolHandler(deps)(request('hermes-media://remote/%2Ftmp%2Fclip.mp4'))
 
     expect(response.status).toBe(206)
     expect(deps.fetchRemote).not.toHaveBeenCalled()

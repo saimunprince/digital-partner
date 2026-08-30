@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 
+import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
 import type { ChatMessage } from '@/lib/chat-messages'
 import { preserveLocalAssistantErrors } from '@/lib/chat-messages'
 import { createClientSessionState } from '@/lib/chat-runtime'
@@ -8,7 +9,6 @@ import { persistInFlightTurnState } from '@/lib/inflight-turn-journal'
 import { setMutableRef } from '@/lib/mutable-ref'
 import {
   $activeSessionId,
-  $busy,
   $messages,
   setActiveSessionStoredIdRotation,
   setCurrentFastMode,
@@ -20,12 +20,16 @@ import {
   setTurnStartedAt,
   setYoloActive
 } from '@/store/session'
-import { $sessionTiles, publishSessionState, releaseSessionTranscript } from '@/store/session-states'
+import { $sessionStates, $sessionTiles, publishSessionState, releaseSessionTranscript } from '@/store/session-states'
 import { $voiceRuntimeId } from '@/store/voice-session'
 
 import type { ClientSessionState } from '../../types'
 import { SessionStateCache } from '../session-state-cache'
 
+import {
+  invalidatePersistedDisplayTranscriptAuthority,
+  suppressTranscriptForView
+} from './use-session-actions/transcript-provenance'
 import { chatMessageArraysEquivalent } from './use-session-actions/utils'
 
 interface SessionStateCacheOptions {
@@ -55,7 +59,7 @@ export function useSessionStateCache({
   setBusy,
   setMessages
 }: SessionStateCacheOptions) {
-  const busy = useStore($busy)
+  const busy = useStore(PRIMARY_SESSION_VIEW.$busy)
   const sessionTiles = useStore($sessionTiles)
   const activeSessionIdRef = useRef<string | null>(activeSessionId)
   const selectedStoredSessionIdRef = useRef<string | null>(selectedStoredSessionId)
@@ -102,6 +106,16 @@ export function useSessionStateCache({
               tile.runtimeId === runtimeId ||
               (state.storedSessionId !== null && tile.storedSessionId === state.storedSessionId)
           ),
+      // A connection death mid-turn leaves snapshots whose frozen busy flags
+      // will never settle (the respawned backend re-mints runtime ids), which
+      // pinned megabytes of warm transcript per reconnect cycle behind
+      // #isWarmSettled (#95189). Trust the cached in-flight flags only while
+      // the authoritative store still claims work for the same runtime id.
+      isAuthoritativelyActive: runtimeId => {
+        const live = $sessionStates.get()[runtimeId]
+
+        return Boolean(live && (live.busy || live.awaitingResponse))
+      },
       onEvict: (runtimeId, state) => {
         // Ownership is removed with the transcript, but only if both sides still
         // describe this exact binding. A recycled runtime must not erase its
@@ -118,6 +132,7 @@ export function useSessionStateCache({
   const sessionStateCache = sessionStateByRuntimeIdRef.current
   const pendingViewStateRef = useRef<{ sessionId: string; state: ClientSessionState } | null>(null)
   const viewSyncRafRef = useRef<number | null>(null)
+  const transcriptViewGateByRuntimeIdRef = useRef(new Map<string, symbol>())
   // Runtime id whose transcript currently occupies `$messages` — lets the
   // flush below tell a same-session refresh from a thread switch.
   const viewSessionIdRef = useRef<string | null>(null)
@@ -136,7 +151,7 @@ export function useSessionStateCache({
           // Stored id changed (e.g. auto-compression rotated it). Create a NEW
           // state object rather than mutating in place — updateSessionState needs
           // the PREVIOUS state to detect transitions (busy→idle, id rotation).
-          const updated = { ...existing, storedSessionId }
+          const updated = invalidatePersistedDisplayTranscriptAuthority({ ...existing, storedSessionId })
 
           // Drop the obsolete stored→runtime reverse mapping as soon as the id
           // rotates (e.g. auto-compression forks a continuation). Leaving the
@@ -193,6 +208,17 @@ export function useSessionStateCache({
     if (viewSyncRafRef.current !== null && typeof window !== 'undefined') {
       window.cancelAnimationFrame(viewSyncRafRef.current)
       viewSyncRafRef.current = null
+    }
+  }, [])
+
+  const holdSessionTranscriptView = useCallback((runtimeId: string): (() => void) => {
+    const token = Symbol(runtimeId)
+    transcriptViewGateByRuntimeIdRef.current.set(runtimeId, token)
+
+    return () => {
+      if (transcriptViewGateByRuntimeIdRef.current.get(runtimeId) === token) {
+        transcriptViewGateByRuntimeIdRef.current.delete(runtimeId)
+      }
     }
   }, [])
 
@@ -259,8 +285,10 @@ export function useSessionStateCache({
         return
       }
 
-      syncRuntimeMetadataToView(state)
-      pendingViewStateRef.current = { sessionId, state }
+      const viewState = suppressTranscriptForView(state, transcriptViewGateByRuntimeIdRef.current.has(sessionId))
+
+      syncRuntimeMetadataToView(viewState)
+      pendingViewStateRef.current = { sessionId, state: viewState }
 
       // Terminal / attention transitions (turn finished, error, or the agent is
       // now waiting on the user) MUST reach the view immediately. Electron
@@ -272,7 +300,7 @@ export function useSessionStateCache({
       // state anyway). The plain busy heartbeat stays RAF-batched: that
       // coalescing exists only to keep periodic `session.info` updates from
       // churning `$messages` and jerking the scroll position while reading.
-      const isCriticalTransition = !state.busy || state.needsInput
+      const isCriticalTransition = !viewState.busy || viewState.needsInput
 
       if (isCriticalTransition) {
         if (viewSyncRafRef.current !== null && typeof window !== 'undefined') {
@@ -376,6 +404,7 @@ export function useSessionStateCache({
     activeSessionIdRef,
     ensureSessionState,
     getRuntimeIdForStoredSession,
+    holdSessionTranscriptView,
     resetViewSync,
     runtimeIdByStoredSessionIdRef,
     selectedStoredSessionIdRef,
