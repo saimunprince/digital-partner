@@ -26,6 +26,7 @@ export * from './api/profiles'
 export * from './api/sessions'
 export * from './api/skills'
 export * from './api/system'
+export * from './api/tasks'
 export * from './api/toolsets'
 
 export type {

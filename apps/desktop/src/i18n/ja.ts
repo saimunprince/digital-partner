@@ -3218,6 +3218,20 @@ export const ja = defineLocale({
     },
     tasks: {
       title: 'タスク',
+      addPlaceholder: '何をしますか？',
+      add: '追加',
+      addFailed: 'タスクを追加できませんでした。',
+      loadFailed: 'ボードを読み込めませんでした。',
+      done: '完了',
+      reopen: '再開',
+      complete: '完了にする',
+      remove: '削除',
+      groups: {
+        now: '進行中',
+        next: '次に',
+        waiting: '待機中',
+        done: '完了'
+      },
       emptyTitle: 'タスクはまだありません。',
       emptyDesc: '{brand} にタスク作成を頼むか、ここで追加できます。'
     },

@@ -3090,6 +3090,20 @@ export const zhHant = defineLocale({
     },
     tasks: {
       title: '任務',
+      addPlaceholder: '需要做什麼？',
+      add: '新增',
+      addFailed: '無法新增該任務。',
+      loadFailed: '無法載入看板。',
+      done: '已完成',
+      reopen: '重新開啟',
+      complete: '標記完成',
+      remove: '刪除',
+      groups: {
+        now: '進行中',
+        next: '接下來',
+        waiting: '等待中',
+        done: '已完成'
+      },
       emptyTitle: '暫無任務。',
       emptyDesc: '請 {brand} 建立任務，或在此新增。'
     },

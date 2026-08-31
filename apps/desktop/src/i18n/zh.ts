@@ -3744,6 +3744,20 @@ export const zh: Translations = {
     },
     tasks: {
       title: '任务',
+      addPlaceholder: '需要做什么？',
+      add: '添加',
+      addFailed: '无法添加该任务。',
+      loadFailed: '无法加载看板。',
+      done: '已完成',
+      reopen: '重新打开',
+      complete: '标记完成',
+      remove: '删除',
+      groups: {
+        now: '进行中',
+        next: '接下来',
+        waiting: '等待中',
+        done: '已完成'
+      },
       emptyTitle: '暂无任务。',
       emptyDesc: '让 {brand} 创建任务，或在此添加。'
     },

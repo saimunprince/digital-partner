@@ -8,7 +8,7 @@ import { useI18n } from '@/i18n'
 import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
 import { notifyError } from '@/store/notifications'
-import { $pendingVoicePrompt } from '@/store/proactive'
+import { $announcement, $pendingVoicePrompt } from '@/store/proactive'
 import { $sessionStates } from '@/store/session-states'
 import { $voiceCenterStartRequest, $voiceRuntimeId, takeVoiceCenterStart } from '@/store/voice-session'
 import { canSubmitVoiceText, ensureVoiceRuntimeReady, submitVoiceText } from '@/store/voice-submit'
@@ -106,7 +106,11 @@ export function useHomeVoice() {
     }
   }, [startRequest])
 
-  const welcome = `${copy[greetingKey(new Date().getHours())]} ${copy.voiceStatus.idle}`
+  // An announcement REPLACES the greeting. "Good evening. Ready when you are.
+  // Your build finished." is two openings for one moment; the thing worth
+  // saying is the opening line.
+  const announcement = useStore($announcement)
+  const welcome = announcement ?? `${copy[greetingKey(new Date().getHours())]} ${copy.voiceStatus.idle}`
 
   useEffect(() => {
     if (phase !== 'greeting') {
@@ -118,6 +122,10 @@ export function useHomeVoice() {
     // Warm the thread while the greeting plays: resuming a long transcript
     // takes a moment and the user is about to speak into it.
     void ensureVoiceRuntimeReady().catch(() => {})
+
+    // Consumed as it is spoken: a re-render mid-playback must not queue it a
+    // second time, and ending the conversation must not bring it back.
+    $announcement.set(null)
 
     // Fail OPEN. A greeting that cannot be spoken (no TTS provider, offline)
     // must not lock the user out of the conversation it introduces.
@@ -176,6 +184,7 @@ export function useHomeVoice() {
   const messages = sessionState?.messages ?? []
 
   const stop = () => {
+    $announcement.set(null)
     $pendingVoicePrompt.set(null)
     stopVoicePlayback()
     setPhase('idle')

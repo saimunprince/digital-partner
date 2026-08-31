@@ -2959,6 +2959,20 @@ export const ar = defineLocale({
     },
     tasks: {
       title: 'المهام',
+      addPlaceholder: 'ما الذي يجب إنجازه؟',
+      add: 'إضافة',
+      addFailed: 'تعذّرت إضافة المهمة.',
+      loadFailed: 'تعذّر تحميل اللوحة.',
+      done: 'مكتمل',
+      reopen: 'إعادة فتح',
+      complete: 'وضع علامة اكتمال',
+      remove: 'حذف',
+      groups: {
+        now: 'الآن',
+        next: 'التالي',
+        waiting: 'قيد الانتظار',
+        done: 'مكتمل'
+      },
       emptyTitle: 'لا مهام بعد.',
       emptyDesc: 'اطلب من {brand} إنشاء مهمة، أو أضفها هنا.'
     },

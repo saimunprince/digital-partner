@@ -19,6 +19,44 @@ export const $lastBriefingDate = persistentAtom<null | string>(
 /** A prompt the voice command centre should send once it is live. */
 export const $pendingVoicePrompt = atom<null | string>(null)
 
+/**
+ * Something the assistant has to SAY, unprompted — an automation that just
+ * finished, a reminder that came due.
+ *
+ * Not a prompt: this text is already the answer. The voice command centre
+ * speaks it in place of its greeting and then listens, so the announcement is
+ * the opening line of a conversation the user can reply to rather than a
+ * notification that talks at them.
+ */
+export const $announcement = atom<null | string>(null)
+
+const ANNOUNCED_STORAGE_KEY = 'hermes.desktop.announcedSessionIds'
+
+/** How many ids to remember. Enough that a day of automations never repeats
+ *  itself; small enough that this never becomes a growing store. */
+const ANNOUNCED_LIMIT = 200
+
+/** Sessions already spoken. Persisted: a restart must not replay this
+ *  morning's briefing at lunch. */
+export const $announcedSessionIds = persistentAtom<string[]>(
+  ANNOUNCED_STORAGE_KEY,
+  [],
+  Codecs.stringArray
+)
+
+/** True the first time an id is seen; false ever after. */
+export function claimAnnouncement(id: string): boolean {
+  const seen = $announcedSessionIds.get()
+
+  if (seen.includes(id)) {
+    return false
+  }
+
+  $announcedSessionIds.set([...seen, id].slice(-ANNOUNCED_LIMIT))
+
+  return true
+}
+
 export interface BriefingWindow {
   enabled: boolean
   /** Local 24h "HH:MM". */

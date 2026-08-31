@@ -3069,6 +3069,20 @@ export interface Translations {
     }
     tasks: {
       title: string
+      addPlaceholder: string
+      add: string
+      addFailed: string
+      loadFailed: string
+      done: string
+      reopen: string
+      complete: string
+      remove: string
+      groups: {
+        now: string
+        next: string
+        waiting: string
+        done: string
+      }
       emptyTitle: string
       emptyDesc: string
     }

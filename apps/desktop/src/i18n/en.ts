@@ -3601,6 +3601,20 @@ export const en: Translations = {
     },
     tasks: {
       title: 'Tasks',
+      addPlaceholder: 'What needs doing?',
+      add: 'Add',
+      addFailed: 'Could not add that task.',
+      loadFailed: 'Could not load the board.',
+      done: 'Done',
+      reopen: 'Reopen',
+      complete: 'Mark done',
+      remove: 'Delete',
+      groups: {
+        now: 'Now',
+        next: 'Next',
+        waiting: 'Waiting',
+        done: 'Done'
+      },
       emptyTitle: 'Nothing on your plate yet.',
       emptyDesc: 'Ask {brand} to create a task, or add one here.'
     },

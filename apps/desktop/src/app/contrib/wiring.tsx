@@ -145,6 +145,7 @@ import {
   resolveActiveTranscriptSession,
   useBackgroundSync
 } from './hooks/use-background-sync'
+import { useCronAnnouncements } from './hooks/use-cron-announcements'
 import { useDailyBriefing } from './hooks/use-daily-briefing'
 import { useDesktopIntegrations } from './hooks/use-desktop-integrations'
 import { usePetBridge } from './hooks/use-pet-bridge'
@@ -688,14 +689,16 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // session / new session), and it hears gateway truth from this window.
   useQuickEntryBridge({ startFreshSessionDraft, submitText })
 
-  // Speak first, once a day. Home owns the voice machine, so the briefing has
-  // to put it on screen the same way the wake word does.
-  useDailyBriefing(
-    useCallback(() => {
-      void window.hermesDesktop?.presentWindow?.()
-      navigateToWorkspacePage(navigate, HOME_ROUTE)
-    }, [navigate])
-  )
+  // Speak first: the daily briefing on a schedule, and whatever the
+  // automations produce when they produce it. Home owns the voice machine, so
+  // both have to put it on screen the same way the wake word does.
+  const presentVoiceCenter = useCallback(() => {
+    void window.hermesDesktop?.presentWindow?.()
+    navigateToWorkspacePage(navigate, HOME_ROUTE)
+  }, [navigate])
+
+  useDailyBriefing(presentVoiceCenter)
+  useCronAnnouncements(presentVoiceCenter)
 
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })
