@@ -90,6 +90,35 @@ export function Starfield({ className }: { className?: string }) {
 
     const still = window.matchMedia('(prefers-reduced-motion: reduce)')
 
+    // One soft dot, drawn once at a fixed size and scaled per star. Its own
+    // canvas so the gradient object is created a single time in the lifetime
+    // of the field rather than tens of times per frame.
+    const halo = document.createElement('canvas')
+    const HALO_PX = 64
+
+    halo.width = HALO_PX
+    halo.height = HALO_PX
+
+    const paintHalo = () => {
+      const haloContext = halo.getContext('2d')
+
+      if (!haloContext) {
+        return
+      }
+
+      const [hr, hg, hb] = colour
+      const mid = HALO_PX / 2
+      const gradient = haloContext.createRadialGradient(mid, mid, 0, mid, mid, mid)
+
+      gradient.addColorStop(0, `rgb(${hr} ${hg} ${hb} / 1)`)
+      gradient.addColorStop(1, `rgb(${hr} ${hg} ${hb} / 0)`)
+      haloContext.clearRect(0, 0, HALO_PX, HALO_PX)
+      haloContext.fillStyle = gradient
+      haloContext.fillRect(0, 0, HALO_PX, HALO_PX)
+    }
+
+    paintHalo()
+
     const resize = () => {
       const rect = canvas.getBoundingClientRect()
 
@@ -134,6 +163,7 @@ export function Starfield({ className }: { className?: string }) {
     // when they change so the sky follows a skin or light/dark switch.
     const themeObserver = new MutationObserver(() => {
       colour = hexToRgb(readColor('--orb-pole', '#9fd4ff'))
+      paintHalo()
     })
 
     themeObserver.observe(document.documentElement, {
@@ -208,14 +238,16 @@ export function Starfield({ className }: { className?: string }) {
 
         if (haloStrength > 0.01) {
           const reach = radius * (2.6 + flare * 2.4)
-          const glow = context.createRadialGradient(star.x, star.y, 0, star.x, star.y, reach)
 
-          glow.addColorStop(0, `rgb(${r} ${g} ${b} / ${alpha * haloStrength})`)
-          glow.addColorStop(1, `rgb(${r} ${g} ${b} / 0)`)
-          context.fillStyle = glow
-          context.beginPath()
-          context.arc(star.x, star.y, reach, 0, Math.PI * 2)
-          context.fill()
+          // Drawn from a pre-rendered sprite, not a fresh gradient.
+          // `createRadialGradient` allocates a new object every call, and this
+          // ran per bright star per frame — a couple of thousand short-lived
+          // objects a second, which is not a leak but is steady pressure on
+          // the collector, and a stutter you can feel. The sprite is built
+          // once and scaled into place.
+          context.globalAlpha = Math.min(1, alpha * haloStrength * 3.2)
+          context.drawImage(halo, star.x - reach, star.y - reach, reach * 2, reach * 2)
+          context.globalAlpha = 1
         }
 
         context.fillStyle = `rgb(${r} ${g} ${b} / ${alpha})`
