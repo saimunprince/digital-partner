@@ -262,20 +262,6 @@ export const NUDGE_PROMPT =
   'not offer help in general, do not ask what I am working on. If there is nothing that clears ' +
   'that bar, reply with exactly: PASS'
 
-/**
- * Was this user turn queued by the app rather than said by the user?
- *
- * Queued prompts ride the ordinary submit path, so they land in the thread as
- * real user messages \u2014 and the on-screen transcript then shows the briefing
- * instruction as something the user said, which they did not. Exact match on
- * the constants above: these strings are set by this module, never typed.
- */
-export function isQueuedPrompt(text: string): boolean {
-  const trimmed = text.trim()
-
-  return trimmed === BRIEFING_PROMPT || trimmed === NUDGE_PROMPT
-}
-
 /** The one-word reply a lull offer makes when it has nothing worth saying.
  *  Given to the model so declining is cheap; never spoken, never shown. */
 export const NUDGE_PASS = 'PASS'

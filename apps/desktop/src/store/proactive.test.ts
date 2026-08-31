@@ -4,6 +4,7 @@ import {
   $nudgeState,
   inQuietHours,
   localDateKey,
+  isNudgePass,
   markNudged,
   minutesOfDay,
   type NudgeState,
@@ -188,5 +189,24 @@ describe('markNudged', () => {
     markNudged(new Date(2026, 7, 31, 9, 0, 0))
 
     expect($nudgeState.get().count).toBe(1)
+  })
+})
+
+describe('isNudgePass', () => {
+  it('recognises the sentinel', () => {
+    expect(isNudgePass('PASS')).toBe(true)
+  })
+
+  // A model adds punctuation and casing unbidden, and a sentinel that fails to
+  // match is spoken out loud.
+  it('recognises it with the punctuation a model adds', () => {
+    expect(isNudgePass('Pass.')).toBe(true)
+    expect(isNudgePass('  pass ')).toBe(true)
+    expect(isNudgePass('PASS!')).toBe(true)
+  })
+
+  it('does not swallow a real reply that merely begins with the word', () => {
+    expect(isNudgePass('Pass me the details, sir.')).toBe(false)
+    expect(isNudgePass('That one I would pass on.')).toBe(false)
   })
 })

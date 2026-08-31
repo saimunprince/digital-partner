@@ -24,7 +24,6 @@ import { greetingKey } from './greeting'
 import { type GlanceLine, OrbClock, OrbGlance } from './orb-aside'
 import { Starfield } from './starfield'
 import { useHomeVoice } from './use-home-voice'
-import { VoiceThread } from './voice-thread'
 
 const RECENT_LIMIT = 4
 const AUTOMATION_LIMIT = 3
@@ -129,21 +128,15 @@ export function HomeView() {
           rather than one surface. */}
       <div
         className={cn(
-          'relative z-10 mx-auto flex w-full min-h-0 max-w-[64rem] flex-1 flex-col py-10',
-          // Centred at rest. While talking the block is TOP-anchored instead:
-          // centring a column that grows with every sentence pushes the orb up
-          // the screen and eventually off it, which is exactly what it did.
-          voice.active ? 'justify-start gap-8' : 'justify-center gap-16'
+          'relative z-10 mx-auto flex w-full max-w-[64rem] flex-1 flex-col justify-center py-10',
+          voice.active ? 'gap-8' : 'gap-16'
         )}
       >
         {/* The assistant owns the upper half — presence, greeting, and the one
             place the conversation starts. */}
         <header
           className={cn(
-            'flex min-h-0 flex-col items-center text-center transition-all duration-300',
-            // The orb block keeps its natural height and the conversation
-            // takes what is left, so the orb sits still while the thread fills.
-            voice.active && 'flex-1',
+            'flex flex-col items-center text-center transition-all duration-300',
             // Wider while talking: the orb's GL surface overshoots its layout
             // box (see .presence-orb__stage), and at full voice its crests
             // reached down over the status line.
@@ -196,8 +189,8 @@ export function HomeView() {
 
           <div
             className={cn(
-              'flex flex-col items-center gap-2',
-              voice.active ? 'min-h-0 w-full flex-1' : 'min-h-[3.5rem]'
+              'flex min-h-[3.5rem] flex-col items-center gap-2',
+              voice.active && 'w-full'
             )}
           >
             {voice.active ? (
@@ -206,17 +199,13 @@ export function HomeView() {
               // said. Narrower than the page and LEFT-aligned — a centred
               // paragraph makes the eye hunt for the start of every line, and
               // a spoken answer can run long.
-              <div className="flex h-full w-full min-h-0 max-w-[34rem] flex-col items-center gap-5">
-                {/* The turn SCROLLS inside a fixed band. Letting it grow pushed
-                    the End control further down the page with every sentence,
-                    so the one button on the surface was never twice in the same
-                    place. */}
-                {/* What it is doing, above what it said: the work is the news
-                    while a turn is running, and the answer is the news once it
-                    has finished. */}
+              <div className="flex w-full max-w-[34rem] flex-col items-center gap-5">
+                {/* What it is DOING, and nothing else. The spoken exchange is
+                    deliberately not on screen: this is a surface for talking,
+                    and a transcript below the orb turns it back into a chat
+                    window you happen to speak at. The conversation is a real
+                    session — it is one click away under Active now. */}
                 <ActivityTrail steps={voice.activity} />
-
-                <VoiceThread turns={voice.turns} />
 
                 <div className="flex shrink-0 flex-col items-center gap-2 text-center">
                   <Button onClick={voice.stop} size="sm" variant="secondary">

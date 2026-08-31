@@ -5,7 +5,7 @@ import { useVoiceConversation } from '@/app/chat/composer/hooks/use-voice-conver
 import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
 import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
-import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
+import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
 import { createWakeHandover } from '@/lib/wake-handover'
 import { notifyError } from '@/store/notifications'
@@ -27,7 +27,6 @@ import { canSubmitVoiceText, ensureVoiceRuntimeReady, submitVoiceText } from '@/
 
 import { turnActivity } from './activity-trail'
 import { greetingKey } from './greeting'
-import { voiceTurns } from './turns'
 
 /**
  * The Home surface's voice conversation.
@@ -274,20 +273,11 @@ export function useHomeVoice() {
     active,
     /** What it is DOING this turn — tools, in order. See ActivityTrail. */
     activity: turnActivity(messages),
-    /** The last thing the assistant said, for the on-screen readout. A
-     *  declined lull offer never happened, as far as the screen is concerned. */
-    reply: messages.findLast(
-      message => message.role === 'assistant' && !message.hidden && !isNudgePass(chatMessageText(message))
-    ),
-    /** The spoken thread as exchanges — see turns.ts. */
-    turns: voiceTurns(messages),
     start: () => setPhase('greeting'),
     // The greeting is the assistant speaking, and the orb and the readout
     // should say so before the machine itself is running.
     status: phase === 'greeting' ? ('speaking' as const) : conversation.status,
     stop,
-    toggle: () => (phase === 'idle' ? setPhase('greeting') : stop()),
-    /** What the user last said — a voice surface should show both sides. */
-    utterance: messages.findLast(message => message.role === 'user' && !message.hidden)
+    toggle: () => (phase === 'idle' ? setPhase('greeting') : stop())
   }
 }

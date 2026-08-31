@@ -3695,18 +3695,6 @@ html:has([data-hud-shell]) [data-slot='popover-content'] {
   animation: presence-aside 0.9s 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
-/* The turn's scroll band. No visible scrollbar: a bar appearing beside the
-   assistant's answer is chrome on a surface that has none, and the band's own
-   fade already says there is more. */
-.voice-transcript {
-  mask-image: linear-gradient(to bottom, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
-  scrollbar-width: none;
-}
-
-.voice-transcript::-webkit-scrollbar {
-  display: none;
-}
-
 /* The orb settling into the corner after the first message.
    It travels FROM roughly where the intro left it — down and left of the
    corner, at intro scale — so the two read as one object moving rather than
