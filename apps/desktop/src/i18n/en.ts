@@ -388,6 +388,17 @@ export const en: Translations = {
   },
 
   settings: {
+    surfaces: {
+      heading: 'Go to',
+      automations: 'Automations',
+      channels: 'Channels',
+      webhooks: 'Webhooks',
+      artifacts: 'Artifacts',
+      commandCenter: 'Command Center',
+      profiles: 'Profiles',
+      agents: 'Spawn tree',
+      memoryGraph: 'Memory graph'
+    },
     voicePicker: {
       title: 'Voice',
       search: 'Search voices',

@@ -256,6 +256,17 @@ export const zhHant = defineLocale({
   },
 
   settings: {
+    surfaces: {
+      heading: '前往',
+      automations: '自動化',
+      channels: '頻道',
+      webhooks: 'Webhook',
+      artifacts: '產物',
+      commandCenter: '命令中心',
+      profiles: '設定檔',
+      agents: '生成樹',
+      memoryGraph: '記憶圖譜'
+    },
     voicePicker: {
       title: '語音',
       search: '搜尋語音',

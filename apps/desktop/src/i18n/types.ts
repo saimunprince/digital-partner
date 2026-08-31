@@ -325,6 +325,17 @@ export interface Translations {
   }
 
   settings: {
+    surfaces: {
+      heading: string
+      automations: string
+      channels: string
+      webhooks: string
+      artifacts: string
+      commandCenter: string
+      profiles: string
+      agents: string
+      memoryGraph: string
+    }
     voicePicker: {
       title: string
       search: string

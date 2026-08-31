@@ -264,6 +264,17 @@ export const ja = defineLocale({
   },
 
   settings: {
+    surfaces: {
+      heading: '移動',
+      automations: '自動化',
+      channels: 'チャンネル',
+      webhooks: 'Webhook',
+      artifacts: '成果物',
+      commandCenter: 'コマンドセンター',
+      profiles: 'プロファイル',
+      agents: '生成ツリー',
+      memoryGraph: 'メモリグラフ'
+    },
     voicePicker: {
       title: '音声',
       search: '音声を検索',

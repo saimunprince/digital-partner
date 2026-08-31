@@ -335,6 +335,17 @@ export const ar = defineLocale({
     noResults: 'لا توجد لغة مطابقة'
   },
   settings: {
+    surfaces: {
+      heading: 'الانتقال إلى',
+      automations: 'الأتمتة',
+      channels: 'القنوات',
+      webhooks: 'Webhooks',
+      artifacts: 'المخرجات',
+      commandCenter: 'مركز الأوامر',
+      profiles: 'الملفات الشخصية',
+      agents: 'شجرة التفريع',
+      memoryGraph: 'خريطة الذاكرة'
+    },
     voicePicker: {
       title: 'الصوت',
       search: 'ابحث عن صوت',

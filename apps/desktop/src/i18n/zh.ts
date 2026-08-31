@@ -375,6 +375,17 @@ export const zh: Translations = {
   },
 
   settings: {
+    surfaces: {
+      heading: '前往',
+      automations: '自动化',
+      channels: '频道',
+      webhooks: 'Webhook',
+      artifacts: '产物',
+      commandCenter: '命令中心',
+      profiles: '配置文件',
+      agents: '生成树',
+      memoryGraph: '记忆图谱'
+    },
     voicePicker: {
       title: '语音',
       search: '搜索语音',

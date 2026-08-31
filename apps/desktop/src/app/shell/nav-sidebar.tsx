@@ -12,31 +12,46 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  Command,
   Home,
   Layers3,
   ListChecks,
   MessageCircle,
+  MessageSquareText,
+  Network,
+  Package,
   Plug,
-  Settings
+  Settings,
+  Starmap,
+  Users
 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { $navRailCollapsed, toggleNavRailCollapsed } from '@/store/layout'
 
 import {
   ACTIVITY_ROUTE,
+  AGENTS_ROUTE,
   type AppView,
   appViewForPath,
+  ARTIFACTS_ROUTE,
   CALENDAR_ROUTE,
+  COMMAND_CENTER_ROUTE,
+  CRON_ROUTE,
   HOME_ROUTE,
   INTEGRATIONS_ROUTE,
   MEMORY_ROUTE,
+  MESSAGING_ROUTE,
   navigateToWorkspacePage,
   NEW_CHAT_ROUTE,
+  PROFILES_ROUTE,
   SETTINGS_ROUTE,
   SIDEBAR_NAV_AREA,
   type SidebarNavContribution,
   SKILLS_ROUTE,
-  TASKS_ROUTE
+  STARMAP_ROUTE,
+  TASKS_ROUTE,
+  WEBHOOKS_ROUTE
 } from '../routes'
 
 interface RailItem {
@@ -64,6 +79,28 @@ const RAIL_ITEMS: readonly RailItem[] = [
     icon: Plug,
     keybindActionId: 'nav.integrations'
   }
+]
+
+// The rest of the app. These surfaces all work, and until now the only way to
+// reach one was to type its URL or already know it was in the command palette
+// — which means most of the product was reachable only by people who already
+// knew it was there. They live below a rule rather than mixed in: the group
+// above is the day's work, this is everything else.
+const MORE_ITEMS: readonly RailItem[] = [
+  { id: 'automations', route: CRON_ROUTE, view: 'cron', icon: Clock, keybindActionId: 'nav.cron' },
+  { id: 'channels', route: MESSAGING_ROUTE, view: 'messaging', icon: MessageSquareText, keybindActionId: 'nav.messaging' },
+  { id: 'webhooks', route: WEBHOOKS_ROUTE, view: 'webhooks', icon: Network, keybindActionId: 'nav.webhooks' },
+  { id: 'artifacts', route: ARTIFACTS_ROUTE, view: 'artifacts', icon: Package, keybindActionId: 'nav.artifacts' },
+  { id: 'memoryGraph', route: STARMAP_ROUTE, view: 'starmap', icon: Starmap, keybindActionId: 'nav.starmap' },
+  {
+    id: 'commandCenter',
+    route: COMMAND_CENTER_ROUTE,
+    view: 'command-center',
+    icon: Command,
+    keybindActionId: 'nav.commandCenter'
+  },
+  { id: 'profiles', route: PROFILES_ROUTE, view: 'profiles', icon: Users, keybindActionId: 'nav.profiles' },
+  { id: 'agents', route: AGENTS_ROUTE, view: 'agents', icon: Users, keybindActionId: 'nav.agents' }
 ]
 
 function RailRow({
@@ -130,7 +167,8 @@ export function NavRail() {
     memory: t.partner.nav.memory,
     skills: t.partner.nav.skills,
     activity: t.partner.nav.activity,
-    integrations: t.partner.nav.integrations
+    integrations: t.partner.nav.integrations,
+    ...t.settings.surfaces
   }
 
   return (
@@ -142,6 +180,19 @@ export function NavRail() {
       )}
     >
       {RAIL_ITEMS.map(item => (
+        <RailRow
+          active={view === item.view}
+          collapsed={collapsed}
+          icon={<item.icon />}
+          key={item.id}
+          label={labels[item.id] ?? item.id}
+          onSelect={() => navigateToWorkspacePage(navigate, item.route)}
+        />
+      ))}
+
+      <div className="mx-2 my-1.5 border-t border-(--ui-stroke-tertiary)" />
+
+      {MORE_ITEMS.map(item => (
         <RailRow
           active={view === item.view}
           collapsed={collapsed}
