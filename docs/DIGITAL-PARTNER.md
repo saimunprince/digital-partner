@@ -193,6 +193,44 @@ servers failed with ImportError and tool search was skipped. `uv pip install
 --python .venv/bin/python <pkg>` fixes that; the venv has no `pip` of its own,
 so `pip list` reports nothing and is not evidence of an empty environment.
 
+## Adding an MCP server
+
+Two traps, both hit on the first one added.
+
+**The starter entry is not a template — it is saved.** "Add server" seeds
+`/path/to/dir`, and saving it unedited gives a server that cannot start and is
+retried every few seconds, forever, into a log nobody reads. One ran a day and
+a half that way. Saving is now refused while a placeholder path is still there.
+
+**`client_id_metadata_document_supported: true` is not a promise.** Airtable
+advertises it, so the SDK identified Hermes by the URL of its published Client
+ID Metadata Document — and Airtable rejected that with *"invalid client_id or
+mismatched redirect_uri"*, **after** login, having accepted the same request
+before it. Everything else checked out: the document returned 200, its
+`redirect_uris` contained the exact callback, and all five pinned ports
+(27890–27894) were free.
+
+The fix is a per-server knob:
+
+```yaml
+mcp_servers:
+  airtable:
+    url: "https://mcp.airtable.com/mcp"
+    auth: oauth
+    oauth:
+      cimd: false     # force RFC 7591 dynamic registration
+```
+
+Then `./.venv/bin/hermes mcp login <name>` — interactively, in a terminal. A
+systemd service cannot open a browser, which is what `OAuthNonInteractiveError`
+means. Clear any stale `~/.hermes/mcp-tokens/<name>.client.json` first so the
+client re-registers.
+
+Afterwards, **leave that file alone**. Dynamic registration binds the client id
+to the exact callback port it registered with (a random one), and Hermes reads
+the port back from there. Delete it and the next authorization is a
+`redirect_uri` mismatch.
+
 ## Still open
 
 - A **queued prompt lands in the thread as a user message**. Home no longer
