@@ -168,7 +168,7 @@ export function NavRail() {
     skills: t.partner.nav.skills,
     activity: t.partner.nav.activity,
     integrations: t.partner.nav.integrations,
-    ...t.settings.surfaces
+    ...t.partner.surfaces
   }
 
   return (

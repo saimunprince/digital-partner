@@ -325,31 +325,6 @@ export interface Translations {
   }
 
   settings: {
-    surfaces: {
-      heading: string
-      automations: string
-      channels: string
-      webhooks: string
-      artifacts: string
-      commandCenter: string
-      profiles: string
-      agents: string
-      memoryGraph: string
-    }
-    voicePicker: {
-      title: string
-      search: string
-      allLanguages: string
-      allGenders: string
-      male: string
-      female: string
-      preview: string
-      playing: string
-      previewFailed: string
-      use: string
-      selected: string
-      loadFailed: string
-    }
     closeSettings: string
     exportConfig: string
     importConfig: string
@@ -3050,106 +3025,6 @@ export interface Translations {
       title: string
       description: string
       toggle: (open: boolean) => string
-    }
-  },
-  partner: {
-    nav: {
-      home: string
-      chat: string
-      tasks: string
-      calendar: string
-      memory: string
-      skills: string
-      activity: string
-      integrations: string
-      settings: string
-    }
-    home: {
-      title: string
-      emptyTitle: string
-      emptyDesc: string
-      greetingMorning: string
-      greetingAfternoon: string
-      greetingEvening: string
-      subtitle: string
-      talk: string
-      newConversation: string
-      activeNow: string
-      nothingActive: string
-      recent: string
-      automations: string
-      noAutomations: string
-      nextRun: (when: string) => string
-      schedule: string
-      scheduleConnect: string
-      scheduleConnectCta: string
-      askPlaceholder: string
-      askHint: string
-      talkHint: string
-      talkAria: string
-      openChat: string
-      endVoice: string
-      interruptHint: string
-      voiceStatus: Record<'idle' | 'listening' | 'speaking' | 'thinking' | 'transcribing', string>
-    }
-    tasks: {
-      title: string
-      addPlaceholder: string
-      add: string
-      addFailed: string
-      loadFailed: string
-      done: string
-      reopen: string
-      complete: string
-      remove: string
-      groups: {
-        now: string
-        next: string
-        waiting: string
-        done: string
-      }
-      emptyTitle: string
-      emptyDesc: string
-    }
-    calendar: {
-      title: string
-      emptyTitle: string
-      emptyDesc: string
-    }
-    memory: {
-      title: string
-      emptyTitle: string
-      emptyDesc: string
-      remembered: string
-      learned: string
-      graphView: string
-      filesTitle: string
-      filesDesc: (memory: string, user: string) => string
-      provider: (name: string) => string
-      sourceMemory: string
-      sourceProfile: string
-    }
-    activity: {
-      title: string
-      emptyTitle: string
-      emptyDesc: string
-      conversation: string
-      automation: string
-      toolRuns: (count: number) => string
-    }
-    integrations: {
-      title: string
-      emptyTitle: string
-      emptyDesc: string
-      channels: string
-      channelsDesc: string
-      connectors: string
-      connectorsDesc: string
-      accounts: string
-      accountsDesc: string
-      automation: string
-      automationDesc: string
-      open: string
     }
   }
 }

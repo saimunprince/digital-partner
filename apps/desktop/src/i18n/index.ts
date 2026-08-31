@@ -16,6 +16,7 @@ export {
   localeConfigValue,
   normalizeLocale
 } from './languages'
+export type { AppTranslations } from './partner/types'
 export {
   createPluginI18n,
   type PluginI18n,

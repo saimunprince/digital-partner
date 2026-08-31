@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import { brandedTranslations } from '@/i18n/brand-interpolate'
-import { en } from '@/i18n/en'
+import { TRANSLATIONS } from '@/i18n/catalog'
 
 import { resolveVersionStatus } from './version-status'
 
 // Match the app: every surface reads the BRANDED tree (useI18n), so the copy
 // under test must be branded too — otherwise a leaked `{brand}` token here
 // would look like a passing test.
-const copy = brandedTranslations('en', en).shell.statusbar
+const copy = brandedTranslations('en', TRANSLATIONS.en).shell.statusbar
 
 const client = (over: Partial<Parameters<typeof resolveVersionStatus>[0]> = {}) =>
   resolveVersionStatus({ applying: false, copy, remote: false, restarting: false, target: 'client', ...over })

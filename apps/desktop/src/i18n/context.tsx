@@ -5,8 +5,9 @@ import { getHermesConfigRecord, type HermesConfigRecord, saveHermesConfig } from
 import { brandedTranslations } from './brand-interpolate'
 import { TRANSLATIONS } from './catalog'
 import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
+import type { AppTranslations } from './partner/types'
 import { setRuntimeI18nLocale } from './runtime'
-import type { Locale, Translations } from './types'
+import type { Locale } from './types'
 
 export { LOCALE_META } from './languages'
 
@@ -74,7 +75,7 @@ export interface I18nContextValue {
   locale: Locale
   saveError: Error | null
   setLocale: (next: Locale) => Promise<void>
-  t: Translations
+  t: AppTranslations
 }
 
 const I18nContext = createContext<I18nContextValue>({

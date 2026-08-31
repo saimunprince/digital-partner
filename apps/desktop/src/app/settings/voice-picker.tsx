@@ -53,7 +53,7 @@ export function VoicePicker({
   voiceId: string
 }) {
   const { t } = useI18n()
-  const copy = t.settings.voicePicker
+  const copy = t.partner.voicePicker
   const [search, setSearch] = useState('')
   const [language, setLanguage] = useState(ALL)
   const [gender, setGender] = useState(ALL)
