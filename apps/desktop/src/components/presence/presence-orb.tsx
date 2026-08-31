@@ -9,13 +9,21 @@ import { $voiceLevel } from '@/store/voice-conversation'
 // that only ever shows the small mark.
 const OrbCanvas = lazy(async () => ({ default: (await import('./orb-canvas')).OrbCanvas }))
 
-export type PresenceOrbSize = 'compact' | 'hero' | 'micro'
+export type PresenceOrbSize = 'compact' | 'hero' | 'micro' | 'mini'
 
 const SIZE_PX: Record<PresenceOrbSize, number> = {
   hero: 560,
+  // Small enough to sit in a corner, big enough to be the real thing: the
+  // particle sphere needs room to read as one. Below roughly this the points
+  // merge into a smudge and the SVG mark is the better drawing.
+  mini: 132,
   compact: 16,
   micro: 20
 }
+
+/** Sizes that get the real orb. The rest render the mark, which is what a
+ *  16px reactor should be — a glyph, not a sphere with two thousand points. */
+const CANVAS_SIZES: ReadonlySet<PresenceOrbSize> = new Set<PresenceOrbSize>(['hero', 'mini'])
 
 /** Coil segments around the core. Ten reads as engineered without becoming a
  *  dotted line at small sizes. */
@@ -58,6 +66,7 @@ export function PresenceOrb({
   const current = state ?? live
   const px = SIZE_PX[size]
   const isHero = size === 'hero'
+  const usesCanvas = CANVAS_SIZES.has(size)
   const isError = current === 'error'
 
   // Voice drives the core; the housing never resizes.
@@ -82,14 +91,18 @@ export function PresenceOrb({
       data-presence-state={current}
       style={{ height: px, width: px }}
     >
-      {isHero && (
+      {usesCanvas && (
         <Suspense fallback={null}>
           <OrbCanvas level={level} onReady={setGlLive} state={current} />
         </Suspense>
       )}
 
       <svg
-        className={cn('block size-full', isHero && 'presence-orb__fallback', isHero && glLive && 'hidden')}
+        className={cn(
+          'block size-full',
+          usesCanvas && 'presence-orb__fallback',
+          usesCanvas && glLive && 'hidden'
+        )}
         viewBox="0 0 100 100"
       >
         <defs>

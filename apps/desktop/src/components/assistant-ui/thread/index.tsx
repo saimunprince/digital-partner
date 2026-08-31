@@ -9,6 +9,7 @@ import { ThreadTimeline } from '@/components/assistant-ui/thread/timeline'
 import { type RestoreMessageTarget } from '@/components/assistant-ui/thread/types'
 import { UserEditComposer } from '@/components/assistant-ui/thread/user-edit-composer'
 import { UserMessage } from '@/components/assistant-ui/thread/user-message'
+import { ChatPresence } from '@/components/chat/chat-presence'
 import { Intro, type IntroProps } from '@/components/chat/intro'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { HermesGateway } from '@/hermes'
@@ -177,6 +178,9 @@ export const Thread = memo(function Thread({
           loadingIndicator={loadingIndicator}
           sessionKey={sessionKey}
         />
+        {/* Presence follows the conversation into the corner. See
+            chat-presence.tsx. */}
+        <ChatPresence />
         {loading === 'session' && <CenteredThreadSpinner />}
         <ThreadTimeline />
         <ConfirmDialog

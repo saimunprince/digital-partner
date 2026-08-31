@@ -3707,6 +3707,30 @@ html:has([data-hud-shell]) [data-slot='popover-content'] {
   display: none;
 }
 
+/* The orb settling into the corner after the first message.
+   It travels FROM roughly where the intro left it — down and left of the
+   corner, at intro scale — so the two read as one object moving rather than
+   one vanishing and another popping in. Transform and opacity only. */
+@keyframes chat-presence-settle {
+  from {
+    opacity: 0;
+    transform: translate3d(-8rem, 9rem, 0) scale(5);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.chat-presence {
+  animation: chat-presence-settle 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+:root[data-renderer-animations-paused] .chat-presence {
+  animation-play-state: paused !important;
+}
+
 .presence-say {
   animation: presence-say 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
