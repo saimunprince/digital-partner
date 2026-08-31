@@ -32,6 +32,13 @@ fail() { printf '%s\n' "✗ $*" >&2; exit 1; }
 # 'BrowserWindow'". Scrub those before anything launches.
 unset ELECTRON_RUN_AS_NODE ELECTRON_NO_ATTACH_CONSOLE
 
+# Run THIS checkout's engine, not whatever copy the installer left in
+# ~/.hermes/hermes-agent. Without this the desktop resolves the installed
+# runtime and every backend change in this repo is dead code — a provider
+# added here, a config section added here, simply never runs. The venv beside
+# this script is the one ensure_python prepared.
+export HERMES_DESKTOP_HERMES_ROOT="$ROOT"
+
 MODE="run"
 REBUILT=0
 FORCE_RESTART=0
