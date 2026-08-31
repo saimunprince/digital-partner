@@ -25,6 +25,7 @@ BOLD=$'\033[1m'; DIM=$'\033[2m'; RESET=$'\033[0m'
 say()  { printf '%s\n' "${DIM}·${RESET} $*"; }
 step() { printf '%s\n' "${BOLD}$*${RESET}"; }
 fail() { printf '%s\n' "✗ $*" >&2; exit 1; }
+warn() { printf '%s\n' "! $*" >&2; }
 
 # Electron is a real GUI binary, but some hosts (VS Code's integrated terminal,
 # some IDE shells) export ELECTRON_RUN_AS_NODE=1, which turns it into a plain
@@ -38,6 +39,37 @@ unset ELECTRON_RUN_AS_NODE ELECTRON_NO_ATTACH_CONSOLE
 # added here, a config section added here, simply never runs. The venv beside
 # this script is the one ensure_python prepared.
 export HERMES_DESKTOP_HERMES_ROOT="$ROOT"
+
+# ...but that only decides what the desktop SPAWNS, and usually it spawns
+# nothing: it attaches to an engine that is already listening. On this machine
+# that engine is a systemd user service, hermes-gateway.service, running the
+# INSTALLED copy under ~/.hermes/hermes-agent with Restart=always. Every turn
+# was served by it, which is why the voice-catalogue endpoint answered 404 and
+# the Fish sync provider was never reached — both exist only here.
+#
+# Say so rather than fight it. Killing a Restart=always service just makes it
+# come back in five seconds, and the service also carries the messaging
+# integrations, so stopping it is a decision for whoever runs this machine —
+# `systemctl --user edit hermes-gateway.service` to point it at this checkout,
+# or `systemctl --user stop` it and let the desktop spawn its own.
+warn_foreign_engine() {
+  for pid in $(pgrep -f "hermes_cli.main" 2>/dev/null); do
+    # NOT /proc/PID/exe: a venv's `python` is a symlink to a shared
+    # interpreter, so this checkout's venv and the installed one resolve to the
+    # SAME uv binary and the test could never tell them apart. What
+    # distinguishes them is the venv.
+    venv="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^VIRTUAL_ENV=//p' | head -1)"
+    [ -n "$venv" ] || continue
+
+    case "$venv" in
+      "$ROOT"/*) ;;
+      *)
+        warn "The engine serving this app is NOT this checkout: $venv"
+        warn "Backend changes made here will not run. See the note in this script."
+        ;;
+    esac
+  done
+}
 
 MODE="run"
 REBUILT=0
@@ -165,6 +197,8 @@ case "$MODE" in
       cd "$APP_DIR"
       exec npx electron .
     fi
+
+    warn_foreign_engine
 
     say "Starting $BRAND_NAME"
     cd "$APP_DIR"
