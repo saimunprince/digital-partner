@@ -11,6 +11,8 @@ import { useI18n } from '@/i18n'
 import { Starmap } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
+import { MemoryCard } from './memory-card'
+
 function formatBytes(bytes: number): string {
   if (!bytes) {
     return '0 B'
@@ -37,8 +39,9 @@ function Section({ action, children, title }: { action?: React.ReactNode; childr
 /** The personal knowledge layer: what the assistant remembers about you, and
  *  the skills/knowledge it has built. Content comes from the learning graph
  *  (`/api/learning/graph`) and the memory-file status endpoint — both already
- *  served by the backend. Structural editing of individual entries needs a
- *  memory-content RPC that does not exist yet, so this view stays read-first. */
+ *  served by the backend. Entries are editable in place: a partner that
+ *  remembers is only useful if it can be corrected, and it writes these itself
+ *  from conversation — so it will sometimes write down the wrong thing. */
 export function MemoryView() {
   const { t } = useI18n()
   const navigate = useNavigate()
@@ -70,17 +73,15 @@ export function MemoryView() {
               ) : (
                 <ul className="flex flex-col gap-3">
                   {cards.map((card, index) => (
-                    <li className="min-w-0" key={`${card.title}-${index}`}>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[0.8125rem] font-medium text-(--ui-text-primary)">{card.title}</span>
-                        <span className="text-[0.6875rem] text-(--ui-text-tertiary)">
-                          {card.source === 'profile' ? t.partner.memory.sourceProfile : t.partner.memory.sourceMemory}
-                        </span>
-                      </div>
-                      <p className="whitespace-pre-wrap pt-0.5 text-xs leading-relaxed text-(--ui-text-secondary)">
-                        {card.body}
-                      </p>
-                    </li>
+                    <MemoryCard
+                      card={card}
+                      index={index}
+                      key={`${card.source}:${index}`}
+                      onChanged={() => {
+                        void graph.refetch()
+                        void status.refetch()
+                      }}
+                    />
                   ))}
                 </ul>
               )}

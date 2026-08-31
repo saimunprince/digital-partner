@@ -100,6 +100,11 @@ export const partnerEn: PartnerTranslations = {
     emptyDesc: 'Connect a calendar in Integrations to see your agenda.'
   },
   memory: {
+    edit: 'Edit',
+    forget: 'Forget',
+    forgetConfirm: title => `Forget “${title}”?`,
+    forgetFailed: 'Could not forget that.',
+    saveFailed: 'Could not save that change.',
     title: 'Memory',
     emptyTitle: 'Nothing remembered yet.',
     emptyDesc: 'What {brand} learns about your work and preferences lives here — always yours to edit.',

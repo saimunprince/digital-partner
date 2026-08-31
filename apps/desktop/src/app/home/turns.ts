@@ -1,4 +1,5 @@
 import { type ChatMessage, chatMessageText } from '@/lib/chat-messages'
+import { isNudgePass, isQueuedPrompt } from '@/store/proactive'
 
 /** How far back the surface remembers. The spoken thread is persisted and can
  *  run to hundreds of messages; a voice surface is for the conversation you
@@ -33,12 +34,19 @@ export function voiceTurns(messages: readonly ChatMessage[]): VoiceTurn[] {
     const text = chatMessageText(message).trim()
 
     if (message.role === 'user') {
-      turns.push({ id: message.id, reply: '', said: text })
+      // A briefing or lull prompt rides the ordinary submit path, so it lands
+      // here as a user message. The user did not say it, and showing it back
+      // to them as their own words is a lie the transcript should not tell.
+      if (!isQueuedPrompt(text)) {
+        turns.push({ id: message.id, reply: '', said: text })
+      }
 
       continue
     }
 
-    if (message.role !== 'assistant' || !text) {
+    // A lull offer that found nothing worth raising. It was never spoken; it
+    // should not be read either.
+    if (message.role !== 'assistant' || !text || isNudgePass(text)) {
       continue
     }
 

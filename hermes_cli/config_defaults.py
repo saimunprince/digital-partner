@@ -1970,6 +1970,22 @@ DEFAULT_CONFIG = {
             "quiet_start": "22:00",
             "quiet_end": "07:00",
         },
+        # Speaking first while the command centre is open and nothing is
+        # happening. The briefing is once a day at a fixed hour; this is the
+        # partner noticing a lull and offering something into it.
+        "nudge": {
+            "enabled": False,
+            # Silence, in minutes, before an offer is allowed. Short enough to
+            # feel attentive, long enough that a pause to think is not
+            # interrupted.
+            "idle_minutes": 6,
+            # A ceiling for the day, not a target. An assistant that speaks
+            # unbidden five times an hour is one the user mutes.
+            "daily_limit": 4,
+            # Minimum minutes between two offers, so a quiet afternoon does not
+            # spend the day's whole allowance in twenty minutes.
+            "spacing_minutes": 25,
+        },
     },
 
     "voice": {

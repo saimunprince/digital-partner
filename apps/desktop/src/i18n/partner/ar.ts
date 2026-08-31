@@ -100,6 +100,11 @@ export const partnerAr: PartnerTranslations = {
     emptyDesc: 'اربط تقويماً من التكاملات لعرض جدولك.'
   },
   memory: {
+    edit: 'تحرير',
+    forget: 'نسيان',
+    forgetConfirm: title => `نسيان ”${title}“؟`,
+    forgetFailed: 'تعذّر النسيان.',
+    saveFailed: 'تعذّر حفظ التغيير.',
     title: 'الذاكرة',
     emptyTitle: 'لا شيء محفوظ بعد.',
     emptyDesc: 'ما يتعلمه {brand} عن عملك وتفضيلاتك يُحفظ هنا — ويمكنك تعديله دائماً.',

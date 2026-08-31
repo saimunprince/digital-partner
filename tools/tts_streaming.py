@@ -86,6 +86,12 @@ SENTENCE_BOUNDARY_RE = re.compile(r"(?<=[.!?])(?:\s|\n)|(?:\n\n)")
 _THINK_BLOCK_RE = re.compile(r"<think[\s>].*?</think>", flags=re.DOTALL)
 
 
+# Where a clause lets a sentence breathe. A comma is a place a person pauses
+# anyway, which makes it the one seam worth introducing to halve the wait
+# before the first sound.
+_CLAUSE_BREAK_RE = re.compile(r"[,;:\u2014\u2013](?=\s)")
+
+
 class SentenceChunker:
     """Incremental sentence cutter for LLM token deltas.
 
@@ -94,11 +100,54 @@ class SentenceChunker:
     ``<think>`` blocks (even split across deltas) and merges fragments shorter
     than *min_len* into the following sentence, so "Ha!" rides along with the
     sentence after it instead of stalling as a tiny clip.
+
+    The FIRST chunk is cut by different rules, because it is the only one the
+    listener experiences as latency — everything after it is synthesised while
+    something is already playing. So the first piece is as short as the text
+    allows: no minimum length (a two-word opener should be spoken immediately,
+    not held back for the sentence after it), and a long opening sentence is
+    cut at a clause break rather than read out whole. At roughly 30ms of
+    synthesis per character, a 135-character opening sentence is four seconds
+    of silence; the same sentence cut at its first comma is under two.
     """
 
-    def __init__(self, min_len: int = 20):
+    def __init__(
+        self,
+        min_len: int = 20,
+        first_ideal: int = 90,
+        first_clause_limit: int = 130,
+        first_min: int = 30,
+    ):
         self.min_len = min_len
+        self.first_ideal = first_ideal
+        self.first_clause_limit = first_clause_limit
+        self.first_min = first_min
         self.buf = ""
+        self._spoke_first = False
+
+    def _first_cut(self) -> int:
+        """Where to cut the opening piece, or -1 to keep waiting.
+
+        Prefers the first sentence end. If that has not arrived by
+        ``first_ideal``, or the sentence runs long, falls back to the last
+        clause break inside ``first_clause_limit``.
+        """
+        m = SENTENCE_BOUNDARY_RE.search(self.buf)
+        end = m.end() if m else -1
+
+        if 0 < end <= self.first_ideal:
+            return end
+
+        # The FIRST usable clause break, not the last one inside the window:
+        # every character past it is silence the listener is sitting through.
+        # `first_min` is the floor — "Yes," is not worth a request of its own,
+        # but a real clause is, and holding one back to reach some larger size
+        # is paying in the one place the listener can hear it.
+        for match in _CLAUSE_BREAK_RE.finditer(self.buf[: self.first_clause_limit]):
+            if match.end() >= self.first_min:
+                return match.end()
+
+        return end
 
     def feed(self, delta: str) -> List[str]:
         """Absorb *delta*; return every complete sentence now ready to speak."""
@@ -106,6 +155,19 @@ class SentenceChunker:
         if "<think" in self.buf and "</think>" not in self.buf:
             return []  # open think tag — the closing tag may arrive next delta
         out: List[str] = []
+
+        if not self._spoke_first:
+            cut = self._first_cut()
+            if cut > 0:
+                head = self.buf[:cut]
+                self.buf = self.buf[cut:]
+                self._spoke_first = True
+                if head.strip():
+                    out.append(head)
+
+        if not self._spoke_first:
+            return out
+
         start = 0  # skip boundaries that would leave the head too short
         while m := SENTENCE_BOUNDARY_RE.search(self.buf, start):
             head = self.buf[: m.end()]
@@ -121,6 +183,7 @@ class SentenceChunker:
         """Drain the tail (end-of-text or long-idle flush)."""
         tail = _THINK_BLOCK_RE.sub("", self.buf).strip()
         self.buf = ""
+        self._spoke_first = True
         return [tail] if tail else []
 
 

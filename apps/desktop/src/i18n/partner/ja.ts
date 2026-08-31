@@ -100,6 +100,11 @@ export const partnerJa: PartnerTranslations = {
     emptyDesc: '連携でカレンダーを接続すると予定が表示されます。'
   },
   memory: {
+    edit: '編集',
+    forget: '忘れる',
+    forgetConfirm: title => `「${title}」を忘れますか？`,
+    forgetFailed: '忘れられませんでした。',
+    saveFailed: '変更を保存できませんでした。',
     title: 'メモリー',
     emptyTitle: 'まだ何も記憶していません。',
     emptyDesc: '{brand} が学んだ内容はここに保存され、いつでも編集できます。',

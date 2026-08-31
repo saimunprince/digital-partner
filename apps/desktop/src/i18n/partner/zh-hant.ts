@@ -100,6 +100,11 @@ export const partnerZhHant: PartnerTranslations = {
     emptyDesc: '在「整合」中連接日曆即可查看日程。'
   },
   memory: {
+    edit: '編輯',
+    forget: '忘記',
+    forgetConfirm: title => `忘記「${title}」？`,
+    forgetFailed: '無法忘記該項目。',
+    saveFailed: '無法儲存該變更。',
     title: '記憶',
     emptyTitle: '還沒有記憶內容。',
     emptyDesc: '{brand} 了解到的工作與偏好保存在這裡，隨時可以編輯。',

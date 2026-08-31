@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { ChatMessage } from '@/lib/chat-messages'
 
+import { BRIEFING_PROMPT, NUDGE_PROMPT } from '@/store/proactive'
+
 import { voiceTurns } from './turns'
 
 const say = (id: string, role: 'assistant' | 'user', text: string, hidden = false): ChatMessage =>
@@ -67,5 +69,37 @@ describe('the spoken thread as exchanges', () => {
     expect(turns).toHaveLength(8)
     expect(turns[0].said).toBe('ask 4')
     expect(turns.at(-1)?.said).toBe('ask 11')
+  })
+})
+
+describe('voiceTurns — unprompted speech', () => {
+  it('does not show a queued briefing prompt as something the user said', () => {
+    const turns = voiceTurns([
+      say('u1', 'user', BRIEFING_PROMPT),
+      say('a1', 'assistant', 'Two meetings today, sir.')
+    ])
+
+    expect(turns).toEqual([{ id: 'a1', reply: 'Two meetings today, sir.', said: '' }])
+  })
+
+  it('does not show a queued lull prompt either', () => {
+    const turns = voiceTurns([say('u1', 'user', NUDGE_PROMPT), say('a1', 'assistant', 'Your build is done.')])
+
+    expect(turns.map(turn => turn.said)).toEqual([''])
+  })
+
+  // The whole point of the sentinel: declining must be invisible.
+  it('drops a declined lull offer entirely', () => {
+    expect(voiceTurns([say('u1', 'user', NUDGE_PROMPT), say('a1', 'assistant', 'PASS')])).toEqual([])
+  })
+
+  it('drops a declined offer that came back with punctuation', () => {
+    expect(voiceTurns([say('u1', 'user', NUDGE_PROMPT), say('a1', 'assistant', 'Pass.')])).toEqual([])
+  })
+
+  it('keeps a real reply that merely starts with the word pass', () => {
+    const turns = voiceTurns([say('u1', 'user', 'hi'), say('a1', 'assistant', 'Pass me the details, sir.')])
+
+    expect(turns[0].reply).toBe('Pass me the details, sir.')
   })
 })

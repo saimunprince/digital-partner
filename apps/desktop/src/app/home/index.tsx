@@ -106,7 +106,17 @@ export function HomeView() {
     openSession(session.id, navigate, openSessionIntentFromModifiers(event))
 
   return (
-    <div className={cn('relative flex h-full flex-col overflow-y-auto', PAGE_INSET_X)}>
+    <div
+      className={cn(
+        'relative flex h-full flex-col',
+        // THE reason the orb used to ride up the screen: the page itself
+        // scrolled, so a growing transcript simply pushed everything above it
+        // out of the frame. While talking the page is fixed and the transcript
+        // owns the only scrollbar; at rest the day panels below still need one.
+        voice.active ? 'overflow-hidden' : 'overflow-y-auto',
+        PAGE_INSET_X
+      )}
+    >
       {/* The sky the orb hangs in: behind the content, inert to the pointer.
           Positioned INSIDE this container rather than fixed to the viewport —
           a negative z-index would put it behind the surface's own background
@@ -117,12 +127,23 @@ export function HomeView() {
           and the day band was pushed to the floor, so on a tall window the two
           drifted a screen apart and the page read as three unrelated strips
           rather than one surface. */}
-      <div className="relative z-10 mx-auto flex w-full max-w-[64rem] flex-1 flex-col justify-center gap-16 py-10">
+      <div
+        className={cn(
+          'relative z-10 mx-auto flex w-full min-h-0 max-w-[64rem] flex-1 flex-col py-10',
+          // Centred at rest. While talking the block is TOP-anchored instead:
+          // centring a column that grows with every sentence pushes the orb up
+          // the screen and eventually off it, which is exactly what it did.
+          voice.active ? 'justify-start gap-8' : 'justify-center gap-16'
+        )}
+      >
         {/* The assistant owns the upper half — presence, greeting, and the one
             place the conversation starts. */}
         <header
           className={cn(
-            'flex flex-col items-center text-center transition-all duration-300',
+            'flex min-h-0 flex-col items-center text-center transition-all duration-300',
+            // The orb block keeps its natural height and the conversation
+            // takes what is left, so the orb sits still while the thread fills.
+            voice.active && 'flex-1',
             // Wider while talking: the orb's GL surface overshoots its layout
             // box (see .presence-orb__stage), and at full voice its crests
             // reached down over the status line.
@@ -173,14 +194,19 @@ export function HomeView() {
             </div>
           )}
 
-          <div className="flex min-h-[3.5rem] flex-col items-center gap-2">
+          <div
+            className={cn(
+              'flex flex-col items-center gap-2',
+              voice.active ? 'min-h-0 w-full flex-1' : 'min-h-[3.5rem]'
+            )}
+          >
             {voice.active ? (
               // Both sides of the turn, weighted the way a conversation is
               // heard: your words as context, its answer as the thing being
               // said. Narrower than the page and LEFT-aligned — a centred
               // paragraph makes the eye hunt for the start of every line, and
               // a spoken answer can run long.
-              <div className="flex w-full max-w-[34rem] flex-col items-center gap-5">
+              <div className="flex h-full w-full min-h-0 max-w-[34rem] flex-col items-center gap-5">
                 {/* The turn SCROLLS inside a fixed band. Letting it grow pushed
                     the End control further down the page with every sentence,
                     so the one button on the surface was never twice in the same
@@ -192,7 +218,7 @@ export function HomeView() {
 
                 <VoiceThread turns={voice.turns} />
 
-                <div className="flex flex-col items-center gap-2 text-center">
+                <div className="flex shrink-0 flex-col items-center gap-2 text-center">
                   <Button onClick={voice.stop} size="sm" variant="secondary">
                     {copy.endVoice}
                   </Button>

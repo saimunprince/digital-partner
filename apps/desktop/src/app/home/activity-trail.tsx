@@ -98,7 +98,7 @@ export function ActivityTrail({ className, steps }: { className?: string; steps:
   }
 
   return (
-    <ul aria-live="polite" className={cn('flex w-full max-w-[34rem] flex-col gap-1.5 text-left', className)}>
+    <ul aria-live="polite" className={cn('flex w-full max-w-[34rem] shrink-0 flex-col gap-1.5 text-left', className)}>
       {steps.map((step, index) => (
         <li
           className={cn(

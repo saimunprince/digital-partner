@@ -257,7 +257,13 @@ export function useVoiceConversation({
       // VAD tuning mirrors `tools.voice_mode` defaults so the browser loop matches the CLI.
       await handle.start({
         silenceLevel: 0.075,
-        silenceMs: 1_250,
+        // How long a pause means "I'm done". This is the largest fixed cost
+        // in the round trip and the one the listener feels as the assistant
+        // being slow to react: at 1250ms every turn began with a second and a
+        // quarter of nothing. A browser's own recogniser settles an utterance
+        // in roughly this range, and 700ms is still an unmistakable pause —
+        // longer than the gap between clauses, shorter than a hesitation.
+        silenceMs: 700,
         idleSilenceMs: 12_000,
         onError: error => {
           notifyError(error, voiceCopy.microphoneFailed)

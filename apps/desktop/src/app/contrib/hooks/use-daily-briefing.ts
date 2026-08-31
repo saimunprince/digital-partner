@@ -4,6 +4,7 @@ import { getHermesConfigRecord } from '@/hermes'
 import {
   $lastBriefingDate,
   $pendingVoicePrompt,
+  BRIEFING_PROMPT,
   type BriefingWindow,
   localDateKey,
   shouldSpeakBriefing
@@ -14,13 +15,6 @@ import { isAuxiliaryWindow } from '@/store/windows'
 /** A minute is fine granularity for something scheduled to the minute, and it
  *  keeps the config read off the hot path. */
 const TICK_MS = 60_000
-
-/** What the briefing asks for. Phrased for the ear: it will be SPOKEN, so it
- *  must not come back as a wall of markdown. */
-const BRIEFING_PROMPT =
-  'Give me my morning briefing out loud: today’s schedule, anything urgent waiting on me, ' +
-  'and what deserves my attention first. Keep it to a few short spoken sentences — no lists, ' +
-  'no markdown. If a data source is not connected, skip it silently rather than explaining it.'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

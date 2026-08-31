@@ -206,6 +206,61 @@ def test_xai_available_uses_oauth_credential_resolver(monkeypatch):
     assert ts.XAIStreamer.available() is False
 
 
+# ── The first chunk is the only one heard as latency ─────────────────────
+
+
+class TestFirstChunk:
+    """Everything after the opening piece is synthesised while something is
+    already playing, so only the first one is a wait. It is cut by its own
+    rules."""
+
+    def test_a_short_opener_is_spoken_on_its_own(self):
+        # The min_len merge exists so "Ha!" does not stall as a tiny clip. On
+        # the FIRST piece it does the opposite of what it is for: it holds a
+        # ready two-word answer back for the sentence after it.
+        c = ts.SentenceChunker()
+        assert c.feed("Got it, sir. Music plays first, everything else waits.")[0].strip() == "Got it, sir."
+
+    def test_a_long_opening_sentence_is_cut_at_a_clause(self):
+        c = ts.SentenceChunker()
+        first = c.feed(
+            "I looked at the calendar and there are three meetings today, "
+            "the first one at ten with the design team, then a review at noon."
+        )[0]
+        assert first.strip().endswith("today,")
+
+    def test_it_takes_the_first_usable_clause_not_the_last(self):
+        """Every character past the cut is silence the listener sits through."""
+        c = ts.SentenceChunker()
+        first = c.feed("The build finished and the tests all passed, the deploy is queued, ready when you are.")[0]
+        assert first.strip().endswith("passed,")
+
+    def test_a_clause_too_early_is_ignored(self):
+        # Cutting at "Yes," gains nothing measurable and costs a request.
+        c = ts.SentenceChunker()
+        assert c.feed("Yes, and ") == []
+
+    def test_it_waits_when_nothing_is_cuttable_yet(self):
+        c = ts.SentenceChunker()
+        assert c.feed("Everything is ready for you now sir and I will") == []
+
+    def test_later_chunks_keep_the_merge_rule(self):
+        c = ts.SentenceChunker()
+        c.feed("Opening it now. ")
+        # "Ha!" is under min_len, so it rides along with the sentence after it
+        # rather than being sent as its own clip.
+        out = c.feed("Ha! That worked better than expected. ")
+        assert out == ["Ha! That worked better than expected. "]
+
+    def test_flush_counts_as_the_first_piece(self):
+        """A one-line reply that never reaches a boundary still leaves the
+        chunker in the state a second reply expects."""
+        c = ts.SentenceChunker()
+        assert c.flush() == []
+        c.feed("Short. And then a longer sentence follows it here. ")
+        assert c._spoke_first is True
+
+
 # ── Fish Audio chunked HTTP ──────────────────────────────────────────────
 
 

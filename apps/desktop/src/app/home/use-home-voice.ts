@@ -5,11 +5,17 @@ import { useVoiceConversation } from '@/app/chat/composer/hooks/use-voice-conver
 import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
 import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
-import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
+import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
 import { createWakeHandover } from '@/lib/wake-handover'
 import { notifyError } from '@/store/notifications'
-import { $announcement, $pendingVoicePrompt } from '@/store/proactive'
+import {
+  $announcement,
+  $pendingVoicePrompt,
+  clearVoiceActivity,
+  isNudgePass,
+  markVoiceActivity
+} from '@/store/proactive'
 import { $sessionStates } from '@/store/session-states'
 import {
   $voiceCenterStartRequest,
@@ -196,27 +202,66 @@ export function useHomeVoice() {
 
       return result.transcript ?? ''
     },
-    pendingResponse: () =>
-      spokeThisSessionRef.current ? collectUnspokenTurnSpeech(voiceMessages(), lastSpokenIdRef.current) : null
+    pendingResponse: () => {
+      if (!spokeThisSessionRef.current) {
+        return null
+      }
+
+      const speech = collectUnspokenTurnSpeech(voiceMessages(), lastSpokenIdRef.current)
+
+      // A lull offer that found nothing worth raising answers with a sentinel.
+      // Swallow it — and mark it spoken, or every later turn would re-collect
+      // it and try again.
+      if (speech && !speech.pending && isNudgePass(speech.text)) {
+        lastSpokenIdRef.current = speech.id
+
+        return null
+      }
+
+      return speech
+    }
   })
 
   // A prompt queued by something other than the user's own voice — the daily
-  // briefing today, a reminder later. It rides the SAME submit path a spoken
-  // turn takes, so the reply is spoken exactly like any other answer.
+  // briefing, an idle offer, a reminder later. It rides the SAME submit path a
+  // spoken turn takes, so the reply is spoken exactly like any other answer.
+  //
+  // SUBSCRIBED, not read once: the briefing queues its prompt before the
+  // centre is live, but a lull offer is queued while it already is, and a
+  // plain read on [phase] would never see that one.
   useEffect(() => {
     if (phase !== 'live') {
       return
     }
 
-    const prompt = $pendingVoicePrompt.get()
-
-    if (prompt) {
-      $pendingVoicePrompt.set(null)
-      void submit(prompt)
+    const take = (prompt: null | string) => {
+      if (prompt) {
+        $pendingVoicePrompt.set(null)
+        void submit(prompt)
+      }
     }
+
+    // nanostores' subscribe fires immediately with the current value, so this
+    // covers the already-queued case too — calling take() separately first
+    // would submit a briefing twice.
+    return $pendingVoicePrompt.subscribe(take)
   }, [phase, submit])
 
   const messages = sessionState?.messages ?? []
+
+  // Publish when the centre last did anything, so the lull detector can tell a
+  // pause from a dead room. Every state change counts as activity: the surface
+  // sits in `listening` for as long as nobody talks, so the transition INTO it
+  // is the moment the silence starts.
+  useEffect(() => {
+    if (phase === 'idle') {
+      clearVoiceActivity()
+
+      return
+    }
+
+    markVoiceActivity()
+  }, [phase, conversation.status, messages.length])
 
   const stop = () => {
     $announcement.set(null)
@@ -229,8 +274,11 @@ export function useHomeVoice() {
     active,
     /** What it is DOING this turn — tools, in order. See ActivityTrail. */
     activity: turnActivity(messages),
-    /** The last thing the assistant said, for the on-screen readout. */
-    reply: messages.findLast(message => message.role === 'assistant' && !message.hidden),
+    /** The last thing the assistant said, for the on-screen readout. A
+     *  declined lull offer never happened, as far as the screen is concerned. */
+    reply: messages.findLast(
+      message => message.role === 'assistant' && !message.hidden && !isNudgePass(chatMessageText(message))
+    ),
     /** The spoken thread as exchanges — see turns.ts. */
     turns: voiceTurns(messages),
     start: () => setPhase('greeting'),

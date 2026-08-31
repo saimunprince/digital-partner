@@ -100,6 +100,11 @@ export const partnerZh: PartnerTranslations = {
     emptyDesc: '在“集成”中连接日历即可查看日程。'
   },
   memory: {
+    edit: '编辑',
+    forget: '忘记',
+    forgetConfirm: title => `忘记“${title}”？`,
+    forgetFailed: '无法忘记该条目。',
+    saveFailed: '无法保存该更改。',
     title: '记忆',
     emptyTitle: '还没有记忆内容。',
     emptyDesc: '{brand} 了解到的工作与偏好保存在这里，随时可以编辑。',

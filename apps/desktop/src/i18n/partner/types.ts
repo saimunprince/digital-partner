@@ -73,6 +73,11 @@ export interface PartnerTranslations {
     emptyDesc: string
   }
   memory: {
+      edit: string
+      forget: string
+      forgetConfirm: (title: string) => string
+      forgetFailed: string
+      saveFailed: string
     title: string
     emptyTitle: string
     emptyDesc: string

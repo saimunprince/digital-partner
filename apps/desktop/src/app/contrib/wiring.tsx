@@ -148,6 +148,7 @@ import {
 import { useCronAnnouncements } from './hooks/use-cron-announcements'
 import { useDailyBriefing } from './hooks/use-daily-briefing'
 import { useDesktopIntegrations } from './hooks/use-desktop-integrations'
+import { useIdleNudge } from './hooks/use-idle-nudge'
 import { usePetBridge } from './hooks/use-pet-bridge'
 import { useQuickEntryBridge } from './hooks/use-quick-entry-bridge'
 import { useSessionTileDelegate } from './hooks/use-session-tile-delegate'
@@ -699,6 +700,9 @@ export function ContribWiring({ children }: { children: ReactNode }) {
 
   useDailyBriefing(presentVoiceCenter)
   useCronAnnouncements(presentVoiceCenter)
+  // Only ever speaks into a centre that is already open, so it needs no way
+  // to present one.
+  useIdleNudge()
 
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })
