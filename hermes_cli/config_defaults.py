@@ -1803,6 +1803,15 @@ DEFAULT_CONFIG = {
     # Gemini 32000, Edge 5000, Mistral 4000, NeuTTS/KittenTTS 2000).
     "tts": {
         # Set explicitly to pin a backend:
+        # Fish Audio. `reference_id` PINS the voice: without one Fish invents a
+        # new voice on every request, so the assistant sounds like a different
+        # person each time it answers. Browse voices at fish.audio, or use the
+        # desktop's voice picker.
+        "fish": {
+            "model": "s2.1-pro-free",   # free tier; paid models 402 without API credit
+            "reference_id": "",
+            "latency": "balanced",      # "balanced" trades a little quality for first-audio time
+        },
         # "edge" (free) | "elevenlabs" (premium) | "openai" | "xai" | "minimax" | "mistral" | "gemini" | "deepinfra" | "neutts" (local) | "kittentts" (local) | "piper" (local)
         "provider": "edge",
         "edge": {

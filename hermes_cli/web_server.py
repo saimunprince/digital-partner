@@ -1246,7 +1246,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "tts.provider": {
         "type": "select",
         "description": "Text-to-speech provider",
-        "options": ["edge", "elevenlabs", "openai", "xai", "minimax", "mistral", "gemini", "neutts", "kittentts", "piper"],
+        "options": ["edge", "fish", "elevenlabs", "openai", "xai", "minimax", "mistral", "gemini", "neutts", "kittentts", "piper"],
     },
     "stt.provider": {
         "type": "select",
@@ -5540,7 +5540,11 @@ async def speak_text(payload: TTSSpeakRequest, profile: Optional[str] = None):
             # resolution, so the task-local override inside this worker
             # thread is sufficient (same reasoning as the MCP probe scope).
             with _config_profile_scope(profile):
-                return text_to_speech_tool(text)
+                return text_to_speech_tool(
+                    text,
+                    provider=(payload.provider or None),
+                    voice=(payload.voice or None),
+                )
 
         loop = asyncio.get_running_loop()
         result_json = await loop.run_in_executor(None, _speak_scoped)
@@ -13002,6 +13006,10 @@ def _raise_if_cron_registration_error(e: Exception) -> None:
 from hermes_cli.web_routers import cron as _cron_routes  # noqa: E402
 
 app.include_router(_cron_routes.router)
+
+from hermes_cli.web_routers import voices as _voices_routes  # noqa: E402
+
+app.include_router(_voices_routes.router)
 from hermes_cli.web_routers.cron import (  # noqa: E402,F401 — legacy re-exports; tests call these via web_server.<name>
     list_cron_jobs,
     get_cron_job,

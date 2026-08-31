@@ -777,8 +777,15 @@ def _resolve_minimax_tts_runtime(
 
 # Built-in provider names. Any ``tts.provider`` value NOT in this set is
 # interpreted as a reference to ``tts.providers.<name>``.
+# Fish Audio. The free-tier model: the paid ones (``s1``, ``s2.1-pro``,
+# ``speech-1.6``) answer 402 on an account with no API credit, so defaulting to
+# one would make a working key look broken.
+DEFAULT_FISH_TTS_MODEL = "s2.1-pro-free"
+DEFAULT_FISH_TTS_BASE_URL = "https://api.fish.audio"
+
 BUILTIN_TTS_PROVIDERS = frozenset({
     "edge",
+    "fish",
     "elevenlabs",
     "openai",
     "minimax",
@@ -2605,6 +2612,71 @@ def _compose_gemini_tts_prompt(
     return f"{preamble}\n\n{persona_prompt}\n\n#### TRANSCRIPT\n{transcript}".strip()
 
 
+def _generate_fish_tts(text: str, output_path: str, tts_config: Dict[str, Any]) -> str:
+    """Generate audio using Fish Audio's ``POST /v1/tts``.
+
+    The same endpoint and request shape as ``FishAudioStreamer``
+    (``tools.tts_streaming``), asking for a whole file instead of a PCM stream.
+    Both paths exist deliberately: streaming is what makes speech start on the
+    first sentence, and this is what speaks when no socket is available. They
+    MUST agree on ``reference_id``, or the assistant changes voice the moment it
+    falls back — which is exactly the bug this provider was added to end.
+
+    Config under ``tts.fish``: ``model`` (header), ``reference_id`` (a voice
+    from the Fish library, or your own clone), ``latency``, ``base_url``.
+    Without a ``reference_id`` Fish invents a voice per request.
+    """
+    import requests
+
+    # Read the section DIRECTLY, the way every other builtin does.
+    # `_get_named_provider_config` deliberately returns nothing for builtin
+    # names — it exists to resolve user-declared `tts.providers.<name>` blocks
+    # — so routing through it here would silently drop `reference_id` and hand
+    # the voice back to Fish's per-request invention.
+    section = tts_config.get("fish") or {}
+
+    if not isinstance(section, dict):
+        section = {}
+    api_key = (
+        _resolve_provider_key("FISH_API_KEY", "fish")
+        or _resolve_provider_key("FISH_AUDIO_API_KEY", "fish")
+    )
+
+    if not api_key:
+        raise ValueError("FISH_API_KEY is not configured")
+
+    base_url = str(
+        section.get("base_url") or get_env_value("FISH_BASE_URL") or DEFAULT_FISH_TTS_BASE_URL
+    ).strip().rstrip("/")
+    model = str(section.get("model") or DEFAULT_FISH_TTS_MODEL).strip()
+
+    payload: Dict[str, Any] = {
+        "text": text,
+        "format": Path(output_path).suffix.lower().lstrip(".") or "mp3",
+        "latency": str(section.get("latency") or "balanced").strip(),
+    }
+    reference_id = str(section.get("reference_id") or section.get("voice") or "").strip()
+
+    if reference_id:
+        payload["reference_id"] = reference_id
+
+    with requests.post(
+        f"{base_url}/v1/tts",
+        json=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "model": model,
+        },
+        timeout=60,
+        stream=True,
+    ) as response:
+        response.raise_for_status()
+        _write_tts_response_to_file(response, output_path, label="Fish Audio TTS")
+
+    return output_path
+
+
 def _generate_gemini_tts(text: str, output_path: str, tts_config: Dict[str, Any]) -> str:
     """Generate audio using Google Gemini TTS.
 
@@ -3337,6 +3409,10 @@ def _text_to_speech_single(
             logger.info("Generating speech with Mistral Voxtral TTS...")
             _generate_mistral_tts(text, file_str, tts_config)
 
+        elif provider == "fish":
+            logger.info("Generating speech with Fish Audio...")
+            _generate_fish_tts(text, file_str, tts_config)
+
         elif provider == "gemini":
             logger.info("Generating speech with Google Gemini TTS...")
             _generate_gemini_tts(text, file_str, tts_config)
@@ -3499,6 +3575,7 @@ def text_to_speech_tool(
     speed: Optional[float] = None,
     instructions: Optional[str] = None,
     provider: Optional[str] = None,
+    voice: Optional[str] = None,
 ) -> str:
     """Convert text to speech audio with long-form chunking.
 
@@ -3553,6 +3630,26 @@ def text_to_speech_tool(
         provider = provider.lower().strip()
     else:
         provider = _get_provider(tts_config)
+
+    # Per-call voice override — what the desktop's voice picker previews with.
+    # Written into a COPY of the provider's section: the config cache is shared
+    # process-wide, and a preview must never change the voice the assistant
+    # actually answers in. Each provider names its voice key differently, so
+    # the mapping is explicit rather than guessed.
+    if voice:
+        voice_key = {
+            "elevenlabs": "voice_id",
+            "fish": "reference_id",
+            "minimax": "voice_id",
+            "mistral": "voice_id",
+            "xai": "voice_id",
+        }.get(provider, "voice")
+        section = tts_config.get(provider)
+        tts_config = dict(tts_config)
+        tts_config[provider] = {
+            **(section if isinstance(section, dict) else {}),
+            voice_key: voice,
+        }
 
     command_provider_config = _resolve_command_provider_config(provider, tts_config)
     max_len = _resolve_max_text_length(provider, tts_config)
@@ -3733,6 +3830,13 @@ def check_tts_requirements() -> bool:
             return True
         except ImportError:
             return _check_neutts_available()
+    if provider == "fish":
+        # HTTP + a key, nothing to import. Must mirror `_generate_fish_tts`,
+        # which accepts either key name.
+        return bool(
+            _resolve_provider_key("FISH_API_KEY", "fish")
+            or _resolve_provider_key("FISH_AUDIO_API_KEY", "fish")
+        )
     if provider == "elevenlabs":
         try:
             _import_elevenlabs()

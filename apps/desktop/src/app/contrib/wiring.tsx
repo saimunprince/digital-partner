@@ -808,7 +808,9 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         // for typing. Navigate first: the request is latched, and Home claims
         // it on the render that follows.
         navigateToWorkspacePage(navigate, HOME_ROUTE)
-        requestVoiceCenterStart()
+        // Woken: the chime at :778 has already answered, so the centre opens
+        // the mic instead of speaking a greeting over it.
+        requestVoiceCenterStart(true)
 
         return
       }

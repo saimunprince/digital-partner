@@ -375,6 +375,20 @@ export const zh: Translations = {
   },
 
   settings: {
+    voicePicker: {
+      title: '语音',
+      search: '搜索语音',
+      allLanguages: '所有语言',
+      allGenders: '全部',
+      male: '男声',
+      female: '女声',
+      preview: '试听',
+      playing: '播放中…',
+      previewFailed: '无法播放该语音。',
+      use: '使用',
+      selected: '使用中',
+      loadFailed: '无法加载语音列表。'
+    },
     closeSettings: '关闭设置',
     exportConfig: '导出配置',
     importConfig: '导入配置',

@@ -256,6 +256,20 @@ export const zhHant = defineLocale({
   },
 
   settings: {
+    voicePicker: {
+      title: '語音',
+      search: '搜尋語音',
+      allLanguages: '所有語言',
+      allGenders: '全部',
+      male: '男聲',
+      female: '女聲',
+      preview: '試聽',
+      playing: '播放中…',
+      previewFailed: '無法播放該語音。',
+      use: '使用',
+      selected: '使用中',
+      loadFailed: '無法載入語音清單。'
+    },
     closeSettings: '關閉設定',
     exportConfig: '匯出設定',
     importConfig: '匯入設定',

@@ -264,6 +264,20 @@ export const ja = defineLocale({
   },
 
   settings: {
+    voicePicker: {
+      title: '音声',
+      search: '音声を検索',
+      allLanguages: 'すべての言語',
+      allGenders: 'すべて',
+      male: '男性',
+      female: '女性',
+      preview: '試聴',
+      playing: '再生中…',
+      previewFailed: 'その音声を再生できませんでした。',
+      use: '使う',
+      selected: '使用中',
+      loadFailed: '音声一覧を読み込めませんでした。'
+    },
     closeSettings: '設定を閉じる',
     exportConfig: '設定を書き出す',
     importConfig: '設定を読み込む',

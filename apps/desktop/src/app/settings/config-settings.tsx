@@ -47,6 +47,7 @@ import { ModelSettings, ModelSettingsSkeleton } from './model-settings'
 import { EmptyState, ListRow, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { SettingsProfileScope } from './profile-scope'
 import { QuickEntrySettings } from './quick-entry-settings'
+import { VoicePicker } from './voice-picker'
 
 export function ConfigSettings({
   activeSectionId,
@@ -387,6 +388,33 @@ function ConfigSettingsInner({
           where image-attachment behavior already lives, so this sits above the
           schema fields for that section. */}
       {activeSectionId === 'chat' ? <AttachmentSizeSetting /> : null}
+
+      {/* The whole voice catalogue, above the per-provider fields. Those fields
+          can only ever offer the handful of names hard-coded in ENUM_OPTIONS;
+          this is every voice the install can actually speak in, with preview.
+          It writes the provider AND its voice key together — letting those two
+          drift is what made the assistant answer in a different voice each
+          turn. */}
+      {activeSectionId === 'voice' ? (
+        <VoicePicker
+          onSelect={patch => {
+            let next = config
+
+            for (const [key, value] of Object.entries(patch)) {
+              next = setNested(next, key, value)
+            }
+
+            updateConfig(next)
+          }}
+          provider={String(getNested(config, 'tts.provider') ?? '')}
+          voiceId={String(
+            getNested(config, `tts.${getNested(config, 'tts.provider')}.reference_id`) ??
+              getNested(config, `tts.${getNested(config, 'tts.provider')}.voice`) ??
+              getNested(config, `tts.${getNested(config, 'tts.provider')}.voice_id`) ??
+              ''
+          )}
+        />
+      ) : null}
       {visibleFields.length === 0 && activeSectionId !== 'chat' ? (
         <EmptyState description={c.emptyDesc} title={c.emptyTitle} />
       ) : visibleFields.length === 0 ? null : (

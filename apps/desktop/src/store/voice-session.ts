@@ -33,7 +33,16 @@ export const $voiceCenterStartRequest = atom(0)
 let nextVoiceCenterStart = 0
 let handledVoiceCenterStart = 0
 
-export const requestVoiceCenterStart = (): void => $voiceCenterStartRequest.set(++nextVoiceCenterStart)
+/** True when the pending request came from the wake phrase. The wake chime
+ *  has already sounded by then, so the centre skips its spoken greeting and
+ *  opens the mic — being made to wait through "Good afternoon" after calling
+ *  its name is the opposite of hands-free. */
+export const $voiceCenterWoken = atom(false)
+
+export const requestVoiceCenterStart = (woken = false): void => {
+  $voiceCenterWoken.set(woken)
+  $voiceCenterStartRequest.set(++nextVoiceCenterStart)
+}
 
 /** True once, for the surface that acts on this request. */
 export function takeVoiceCenterStart(current: number): boolean {

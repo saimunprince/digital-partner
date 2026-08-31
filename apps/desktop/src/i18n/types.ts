@@ -325,6 +325,20 @@ export interface Translations {
   }
 
   settings: {
+    voicePicker: {
+      title: string
+      search: string
+      allLanguages: string
+      allGenders: string
+      male: string
+      female: string
+      preview: string
+      playing: string
+      previewFailed: string
+      use: string
+      selected: string
+      loadFailed: string
+    }
     closeSettings: string
     exportConfig: string
     importConfig: string

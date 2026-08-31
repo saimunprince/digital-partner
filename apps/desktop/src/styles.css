@@ -3676,6 +3676,37 @@ html:has([data-hud-shell]) [data-slot='popover-content'] {
   }
 }
 
+/* The columns beside the orb arrive after it does — the orb is the subject and
+   should be alone for a beat. Slower and gentler than `presence-say`, which
+   punctuates a turn; this one just settles. */
+@keyframes presence-aside {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.presence-aside {
+  animation: presence-aside 0.9s 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* The turn's scroll band. No visible scrollbar: a bar appearing beside the
+   assistant's answer is chrome on a surface that has none, and the band's own
+   fade already says there is more. */
+.voice-transcript {
+  mask-image: linear-gradient(to bottom, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
+  scrollbar-width: none;
+}
+
+.voice-transcript::-webkit-scrollbar {
+  display: none;
+}
+
 .presence-say {
   animation: presence-say 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
@@ -3716,9 +3747,11 @@ html:has([data-hud-shell]) [data-slot='popover-content'] {
      group, and the canvas below then blends against that group's empty
      backdrop instead of the page — which is exactly how a black disc survives
      a `screen` blend. */
-  /* Kept in step with STAGE_OVERSHOOT in orb-canvas.tsx: -12.5% a side is a
-     1.25x surface, the headroom the orb's loudest excursions need. */
-  inset: -12.5%;
+  /* Kept in step with STAGE_OVERSHOOT in orb-canvas.tsx: -27.5% a side is a
+     1.55x surface, the headroom the orb's loudest excursions need. The camera
+     pulls back by the same factor, so the orb's size on screen is unchanged —
+     this buys room, not scale. */
+  inset: -27.5%;
   pointer-events: none;
   position: absolute;
 }

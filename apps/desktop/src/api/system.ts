@@ -183,12 +183,16 @@ export function transcribeAudio(dataUrl: string, mimeType?: string): Promise<Aud
   })
 }
 
-export function speakText(text: string): Promise<AudioSpeakResponse> {
+export function speakText(
+  text: string,
+  /** Per-request override, for previewing a voice without adopting it. */
+  override?: { provider?: string; voice?: string }
+): Promise<AudioSpeakResponse> {
   return hermesApi<AudioSpeakResponse>({
     ...profileScoped(),
     path: '/api/audio/speak',
     method: 'POST',
-    body: { text },
+    body: { text, ...override },
     // TTS blocks until provider synthesis, file read, and base64 encoding
     // finish. Remote providers and large messages regularly exceed the
     // default 15s Electron backend timeout.
@@ -243,5 +247,25 @@ export function runDebugShare(): Promise<DebugShareResponse> {
     body: {},
     // Synchronous upload of report + logs to the paste service.
     timeoutMs: 120_000
+  })
+}
+
+// ---------------------------------------------------------------------------
+// The voice catalogue — every voice this install can actually speak in.
+// ---------------------------------------------------------------------------
+
+export interface CatalogVoice {
+  gender: string
+  id: string
+  language: string
+  name: string
+  provider: string
+  tags: string[]
+}
+
+export function listVoices(): Promise<{ voices: CatalogVoice[] }> {
+  return hermesApi<{ voices: CatalogVoice[] }>({
+    ...profileScoped(),
+    path: '/api/voices'
   })
 }

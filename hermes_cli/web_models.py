@@ -304,6 +304,11 @@ class DebugShareRequest(BaseModel):
 
 class TTSSpeakRequest(BaseModel):
     text: str
+    # Per-request overrides for the desktop's voice picker preview. Additive:
+    # omitted by every existing client, and a preview must never change the
+    # voice the assistant actually answers in.
+    provider: Optional[str] = None
+    voice: Optional[str] = None
 
 
 # --- from web_server.py (originally lines 11549-11551) ---

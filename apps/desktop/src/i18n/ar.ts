@@ -335,6 +335,20 @@ export const ar = defineLocale({
     noResults: 'لا توجد لغة مطابقة'
   },
   settings: {
+    voicePicker: {
+      title: 'الصوت',
+      search: 'ابحث عن صوت',
+      allLanguages: 'كل اللغات',
+      allGenders: 'الكل',
+      male: 'ذكر',
+      female: 'أنثى',
+      preview: 'استماع',
+      playing: 'قيد التشغيل…',
+      previewFailed: 'تعذّر تشغيل هذا الصوت.',
+      use: 'استخدام',
+      selected: 'قيد الاستخدام',
+      loadFailed: 'تعذّر تحميل قائمة الأصوات.'
+    },
     closeSettings: 'إغلاق الإعدادات',
     exportConfig: 'تصدير الإعدادات',
     importConfig: 'استيراد الإعدادات',

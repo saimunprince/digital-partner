@@ -7,13 +7,21 @@ import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
+import { createWakeHandover } from '@/lib/wake-handover'
 import { notifyError } from '@/store/notifications'
 import { $announcement, $pendingVoicePrompt } from '@/store/proactive'
 import { $sessionStates } from '@/store/session-states'
-import { $voiceCenterStartRequest, $voiceRuntimeId, takeVoiceCenterStart } from '@/store/voice-session'
+import {
+  $voiceCenterStartRequest,
+  $voiceCenterWoken,
+  $voiceRuntimeId,
+  takeVoiceCenterStart
+} from '@/store/voice-session'
 import { canSubmitVoiceText, ensureVoiceRuntimeReady, submitVoiceText } from '@/store/voice-submit'
 
+import { turnActivity } from './activity-trail'
 import { greetingKey } from './greeting'
+import { voiceTurns } from './turns'
 
 /**
  * The Home surface's voice conversation.
@@ -49,6 +57,10 @@ export function useHomeVoice() {
   // be hundreds of turns long. None of it is a reply to the thing just said —
   // speaking only starts once this session has actually sent something.
   const spokeThisSessionRef = useRef(false)
+  // The wake detector and this conversation share one microphone. Without the
+  // handover the detector is stopped on wake and never re-armed, so the wake
+  // phrase works exactly once per launch.
+  const wakeRef = useRef(createWakeHandover())
 
   const sessionState = voiceRuntimeId ? sessionStates[voiceRuntimeId] : undefined
   const busy = Boolean(sessionState?.busy)
@@ -102,7 +114,12 @@ export function useHomeVoice() {
 
   useEffect(() => {
     if (startRequest > 0 && takeVoiceCenterStart(startRequest)) {
-      setPhase(current => (current === 'idle' ? 'greeting' : current))
+      // Straight to listening when the wake phrase called it: the chime has
+      // already answered, and a greeting on top of it is one acknowledgement
+      // too many. Clicking the orb still gets the spoken one.
+      const next = $voiceCenterWoken.get() ? 'live' : 'greeting'
+
+      setPhase(current => (current === 'idle' ? next : current))
     }
   }, [startRequest])
 
@@ -112,16 +129,30 @@ export function useHomeVoice() {
   const announcement = useStore($announcement)
   const welcome = announcement ?? `${copy[greetingKey(new Date().getHours())]} ${copy.voiceStatus.idle}`
 
+  // Take the mic for the whole conversation, and give it back when it ends.
+  // Warm the thread here too: resuming a long transcript takes a moment, and
+  // a wake goes straight to listening without the greeting to hide it behind.
+  useEffect(() => {
+    const wake = wakeRef.current
+
+    if (active) {
+      wake.pause()
+      void ensureVoiceRuntimeReady().catch(() => {})
+
+      return () => wake.resume()
+    }
+
+    wake.resume()
+
+    return undefined
+  }, [active])
+
   useEffect(() => {
     if (phase !== 'greeting') {
       return
     }
 
     let cancelled = false
-
-    // Warm the thread while the greeting plays: resuming a long transcript
-    // takes a moment and the user is about to speak into it.
-    void ensureVoiceRuntimeReady().catch(() => {})
 
     // Consumed as it is spoken: a re-render mid-playback must not queue it a
     // second time, and ending the conversation must not bring it back.
@@ -151,6 +182,10 @@ export function useHomeVoice() {
         lastSpokenIdRef.current = last.id
       }
     },
+    // Awaited right before the mic opens, so the detector has finished
+    // releasing the device — opening ours while it still holds it makes
+    // getUserMedia fail, and the surface just never starts listening.
+    beforeMicOpen: () => wakeRef.current.barrier(),
     enabled: phase === 'live',
     onFatalError: () => setPhase('idle'),
     onStopWord: () => setPhase('idle'),
@@ -192,8 +227,12 @@ export function useHomeVoice() {
 
   return {
     active,
+    /** What it is DOING this turn — tools, in order. See ActivityTrail. */
+    activity: turnActivity(messages),
     /** The last thing the assistant said, for the on-screen readout. */
     reply: messages.findLast(message => message.role === 'assistant' && !message.hidden),
+    /** The spoken thread as exchanges — see turns.ts. */
+    turns: voiceTurns(messages),
     start: () => setPhase('greeting'),
     // The greeting is the assistant speaking, and the orb and the readout
     // should say so before the machine itself is running.

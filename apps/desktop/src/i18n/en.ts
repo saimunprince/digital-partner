@@ -388,6 +388,20 @@ export const en: Translations = {
   },
 
   settings: {
+    voicePicker: {
+      title: 'Voice',
+      search: 'Search voices',
+      allLanguages: 'All languages',
+      allGenders: 'All',
+      male: 'Male',
+      female: 'Female',
+      preview: 'Preview',
+      playing: 'Playing…',
+      previewFailed: 'Could not play that voice.',
+      use: 'Use',
+      selected: 'In use',
+      loadFailed: 'Could not load the voice list.'
+    },
     closeSettings: 'Close settings',
     exportConfig: 'Export config',
     importConfig: 'Import config',

@@ -22,7 +22,7 @@ const UPSTREAM_CAMERA_Z = 5.2
  *  on screen while gaining room around it. The margin is not cosmetic: the
  *  fragment vignette fades everything near the canvas edge, so a tight surface
  *  shears the crests off exactly when the voice pushes them furthest out. */
-const STAGE_OVERSHOOT = 1.25
+const STAGE_OVERSHOOT = 1.55
 const CAMERA_Z = UPSTREAM_CAMERA_Z * STAGE_OVERSHOOT
 
 /** Fallbacks only — the live values come from the theme (see --orb-* in
@@ -313,7 +313,10 @@ export function OrbCanvas({ level, onReady, state }: OrbCanvasProps) {
       }
 
       uniforms.u_voice_amp.value = ampSmooth
-      uniforms.u_noise_amp.value = NOISE_AMP + (live ? ampSmooth * 0.62 : 0) + thinkBlend * 0.1
+      // Capped so the crests never reach the canvas edge. At the old lift the
+      // orb's peak measured exactly 1.00 of the half-frame — dead on the
+      // vignette — so a loud syllable had its far side shaved flat.
+      uniforms.u_noise_amp.value = NOISE_AMP + (live ? ampSmooth * 0.45 : 0) + thinkBlend * 0.1
       uniforms.u_brightness.value =
         (BRIGHTNESS + (live ? ampSmooth * 2 : 0) + thinkBlend) * PALETTE.brightness * (state === 'error' ? 0.35 : 1)
       uniforms.u_voice_focus.value = live ? focusSmooth : 0

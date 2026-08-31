@@ -157,7 +157,13 @@ case "$MODE" in
         fi
       done
     elif [ -n "$running" ]; then
-      say "$BRAND_NAME is already running — focusing it. Use --restart to reload it."
+      # The app holds a single-instance lock, so this launch hands off to the
+      # window that is already open and exits. Say that, and only that —
+      # printing "Starting" underneath it read as a second instance booting.
+      say "$BRAND_NAME is already running — bringing it to the front."
+      say "Use --restart to reload it with the current build."
+      cd "$APP_DIR"
+      exec npx electron .
     fi
 
     say "Starting $BRAND_NAME"

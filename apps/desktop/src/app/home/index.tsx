@@ -9,7 +9,6 @@ import { PresenceOrb } from '@/components/presence/presence-orb'
 import { Button } from '@/components/ui/button'
 import { getCronJobs } from '@/hermes'
 import { useI18n } from '@/i18n'
-import { chatMessageText } from '@/lib/chat-messages'
 import { sessionTitle } from '@/lib/chat-runtime'
 import { CalendarDays, Clock } from '@/lib/icons'
 import { useKeybindHint } from '@/lib/keybinds/use-keybind-hint'
@@ -20,8 +19,12 @@ import { $sessions } from '@/store/session'
 import { $workingSessionIds } from '@/store/session-states'
 import type { SessionInfo } from '@/types/hermes'
 
+import { ActivityTrail } from './activity-trail'
 import { greetingKey } from './greeting'
+import { type GlanceLine, OrbClock, OrbGlance } from './orb-aside'
+import { Starfield } from './starfield'
 import { useHomeVoice } from './use-home-voice'
+import { VoiceThread } from './voice-thread'
 
 const RECENT_LIMIT = 4
 const AUTOMATION_LIMIT = 3
@@ -89,30 +92,63 @@ export function HomeView() {
     .sort((a, b) => String(a.next_run_at).localeCompare(String(b.next_run_at)))
     .slice(0, AUTOMATION_LIMIT)
 
+  // What is WAITING, one line each — not a second copy of the panels below.
+  // Only when there is something to say: a quiet day shows a short column,
+  // not a list of zeroes.
+  const glance: GlanceLine[] = [
+    working.length > 0 ? { label: copy.activeNow, value: String(working.length) } : null,
+    upcoming.length > 0 && upcoming[0].next_run_at
+      ? { label: copy.automations, value: relativeTime(Date.parse(upcoming[0].next_run_at)) }
+      : null
+  ].filter((line): line is GlanceLine => line !== null)
+
   const openRecent = (session: SessionInfo) => (event: React.MouseEvent) =>
     openSession(session.id, navigate, openSessionIntentFromModifiers(event))
 
   return (
-    <div className={cn('flex h-full flex-col overflow-y-auto', PAGE_INSET_X)}>
-      <div className="mx-auto flex w-full max-w-[64rem] flex-1 flex-col">
+    <div className={cn('relative flex h-full flex-col overflow-y-auto', PAGE_INSET_X)}>
+      {/* The sky the orb hangs in: behind the content, inert to the pointer.
+          Positioned INSIDE this container rather than fixed to the viewport —
+          a negative z-index would put it behind the surface's own background
+          and paint nothing at all, which is exactly what it did. */}
+      <Starfield className="pointer-events-none absolute inset-0 z-0" />
+
+      {/* ONE composition, centred as a whole. The header used to take `flex-1`
+          and the day band was pushed to the floor, so on a tall window the two
+          drifted a screen apart and the page read as three unrelated strips
+          rather than one surface. */}
+      <div className="relative z-10 mx-auto flex w-full max-w-[64rem] flex-1 flex-col justify-center gap-16 py-10">
         {/* The assistant owns the upper half — presence, greeting, and the one
             place the conversation starts. */}
         <header
           className={cn(
-            'flex flex-1 flex-col items-center justify-center text-center transition-all duration-300',
-            voice.active ? 'gap-8 py-10' : 'gap-7 py-14'
+            'flex flex-col items-center text-center transition-all duration-300',
+            // Wider while talking: the orb's GL surface overshoots its layout
+            // box (see .presence-orb__stage), and at full voice its crests
+            // reached down over the status line.
+            voice.active ? 'gap-14' : 'gap-6'
           )}
         >
           {/* The orb is the control: this surface is for talking. Typing has
-              its own home in Chat. */}
-          <button
-            aria-label={copy.talkAria}
-            className="presence-orb-button cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent"
-            onClick={voice.toggle}
-            type="button"
-          >
-            <PresenceOrb size="hero" />
-          </button>
+              its own home in Chat.
+
+              It is flanked rather than floated: a metre of nothing either side
+              reads as an unfinished page. The columns are hidden while talking
+              — then the orb IS the page. */}
+          <div className="flex w-full items-center justify-center gap-10">
+            <OrbClock className={cn('hidden w-40 lg:block', voice.active && 'invisible')} />
+
+            <button
+              aria-label={copy.talkAria}
+              className="presence-orb-button shrink-0 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent"
+              onClick={voice.toggle}
+              type="button"
+            >
+              <PresenceOrb size="hero" />
+            </button>
+
+            <OrbGlance className={cn('hidden w-40 lg:flex', voice.active && 'invisible')} lines={glance} />
+          </div>
 
           {voice.active && (
             // Keyed on the status so each change re-runs the entrance: the
@@ -139,27 +175,24 @@ export function HomeView() {
 
           <div className="flex min-h-[3.5rem] flex-col items-center gap-2">
             {voice.active ? (
-              <div className="flex w-full max-w-[40rem] flex-col items-center gap-5">
-                {/* Both sides, weighted the way a conversation is heard: your
-                    words as context, its answer as the thing being said. */}
-                {voice.utterance && (
-                  <p
-                    className="presence-say text-center text-[0.8125rem] leading-relaxed text-(--ui-text-tertiary)"
-                    key={voice.utterance.id}
-                  >
-                    {chatMessageText(voice.utterance)}
-                  </p>
-                )}
-                {voice.reply && (
-                  <p
-                    className="presence-say text-center text-[1.0625rem] leading-[1.7] text-(--ui-text-primary)"
-                    key={voice.reply.id}
-                  >
-                    {chatMessageText(voice.reply)}
-                  </p>
-                )}
+              // Both sides of the turn, weighted the way a conversation is
+              // heard: your words as context, its answer as the thing being
+              // said. Narrower than the page and LEFT-aligned — a centred
+              // paragraph makes the eye hunt for the start of every line, and
+              // a spoken answer can run long.
+              <div className="flex w-full max-w-[34rem] flex-col items-center gap-5">
+                {/* The turn SCROLLS inside a fixed band. Letting it grow pushed
+                    the End control further down the page with every sentence,
+                    so the one button on the surface was never twice in the same
+                    place. */}
+                {/* What it is doing, above what it said: the work is the news
+                    while a turn is running, and the answer is the news once it
+                    has finished. */}
+                <ActivityTrail steps={voice.activity} />
 
-                <div className="flex flex-col items-center gap-2 pt-2">
+                <VoiceThread turns={voice.turns} />
+
+                <div className="flex flex-col items-center gap-2 text-center">
                   <Button onClick={voice.stop} size="sm" variant="secondary">
                     {copy.endVoice}
                   </Button>
@@ -183,7 +216,7 @@ export function HomeView() {
         {/* The day: three panels of equal weight across the frame. */}
         {/* Hidden outright while talking, not just faded: an invisible band
             still holds its space, which pushed the conversation off centre. */}
-        <div className={cn('grid grid-cols-1 gap-x-10 gap-y-8 pb-12 md:grid-cols-3', voice.active && 'hidden')}>
+        <div className={cn('grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3', voice.active && 'hidden')}>
           <Panel title={copy.schedule}>
             <Quiet>{copy.scheduleConnect}</Quiet>
             <Button

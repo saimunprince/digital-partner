@@ -329,6 +329,7 @@ export const ENUM_OPTIONS: Record<string, string[]> = {
   // BUILTIN_TTS_PROVIDERS). 'xai' is Grok TTS.
   'tts.provider': [
     'edge',
+    'fish',
     'elevenlabs',
     'openai',
     'xai',
@@ -472,6 +473,10 @@ export const FIELD_LABELS: Record<string, string> = defineFieldCopy({
     }
   },
   tts: {
+    fish: {
+      model: 'Fish Model',
+      referenceId: 'Fish Voice'
+    },
     provider: 'Text-To-Speech Provider',
     edge: {
       voice: 'Edge Voice'
@@ -617,6 +622,10 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
     autoTts: 'Automatically speak assistant responses.'
   },
   tts: {
+    fish: {
+      model: 'Free tier by default. The paid models answer 402 on an account with no API credit.',
+      referenceId: 'A voice id from fish.audio. Leave this empty and Fish invents a new voice on every request — the assistant answers in a different voice each time.'
+    },
     xai: {
       voiceId: 'xAI voice ID (e.g. eve) or a custom voice ID.',
       language: 'Spoken language code (e.g. en, pt-BR) or "auto" for auto-detection.',
@@ -730,6 +739,8 @@ export const SECTIONS: DesktopConfigSection[] = [
       'stt.provider',
       'voice.auto_tts',
       'tts.edge.voice',
+      'tts.fish.model',
+      'tts.fish.reference_id',
       'tts.openai.model',
       'tts.openai.voice',
       'tts.elevenlabs.voice_id',
