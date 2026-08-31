@@ -170,6 +170,29 @@ wired; it has nothing to show until the consent screen is through review.
 
 ---
 
+## Two engines run on this machine
+
+Worth knowing before diagnosing anything, because it produced a wrong diagnosis
+once already:
+
+- **The desktop's own** — `hermes_cli.main serve`, spawned from THIS checkout on
+  launch (`HERMES_DESKTOP_HERMES_ROOT` in `digital-partner.sh`), a child of
+  electron. This is what answers the app.
+- **`hermes-gateway.service`** — a systemd user unit, `Restart=always`, running
+  the INSTALLED copy under `~/.hermes/hermes-agent`. It carries the messaging
+  integrations. It is not what serves the app; leave it alone.
+
+```bash
+pgrep -af "hermes_cli.main"   # the desktop's is the child of electron
+```
+
+Seeing only the systemd one — the desktop's is not running between launches —
+led to "none of the backend work is live", which was wrong. The real fault was
+that this checkout's `.venv` was missing `mcp` and `snowballstemmer`, so MCP
+servers failed with ImportError and tool search was skipped. `uv pip install
+--python .venv/bin/python <pkg>` fixes that; the venv has no `pip` of its own,
+so `pip list` reports nothing and is not evidence of an empty environment.
+
 ## Still open
 
 - A **queued prompt lands in the thread as a user message**. Home no longer

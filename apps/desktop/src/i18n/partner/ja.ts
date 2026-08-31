@@ -125,6 +125,10 @@ export const partnerJa: PartnerTranslations = {
     automation: '自動化',
     toolRuns: (count: number) => `ツール実行 ${count} 件`
   },
+  mcp: {
+    unfinished: (names: string) =>
+      `保存する前にプレースホルダーのパスを入力してください: ${names}。/path/to/dir のままのサーバーは起動できず、数秒ごとに再試行し続けます。`
+  },
   integrations: {
     title: '連携',
     emptyTitle: 'あなたの世界とつなぐ。',

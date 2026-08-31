@@ -125,6 +125,10 @@ export const partnerEn: PartnerTranslations = {
     automation: 'Automation',
     toolRuns: count => `${count} tool ${count === 1 ? 'run' : 'runs'}`
   },
+  mcp: {
+    unfinished: (names: string) =>
+      `Fill in the placeholder path before saving: ${names}. A server left on /path/to/dir cannot start, and retries every few seconds forever.`
+  },
   integrations: {
     title: 'Integrations',
     emptyTitle: 'Connect your world.',

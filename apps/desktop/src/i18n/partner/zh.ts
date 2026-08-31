@@ -125,6 +125,10 @@ export const partnerZh: PartnerTranslations = {
     automation: '自动化',
     toolRuns: (count: number) => `${count} 次工具调用`
   },
+  mcp: {
+    unfinished: (names: string) =>
+      `保存前请填写占位路径：${names}。仍为 /path/to/dir 的服务器无法启动，并会每隔几秒无限重试。`
+  },
   integrations: {
     title: '集成',
     emptyTitle: '连接你的世界。',

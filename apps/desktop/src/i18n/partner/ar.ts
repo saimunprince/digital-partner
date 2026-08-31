@@ -125,6 +125,10 @@ export const partnerAr: PartnerTranslations = {
     automation: 'أتمتة',
     toolRuns: (count: number) => `${count} تشغيل أداة`
   },
+  mcp: {
+    unfinished: (names: string) =>
+      `املأ المسار النائب قبل الحفظ: ${names}. الخادم الذي يبقى على /path/to/dir لا يمكنه البدء، ويعيد المحاولة كل بضع ثوانٍ إلى الأبد.`
+  },
   integrations: {
     title: 'التكاملات',
     emptyTitle: 'اربط عالمك.',

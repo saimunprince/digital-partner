@@ -125,6 +125,10 @@ export const partnerZhHant: PartnerTranslations = {
     automation: '自動化',
     toolRuns: (count: number) => `${count} 次工具呼叫`
   },
+  mcp: {
+    unfinished: (names: string) =>
+      `儲存前請填寫佔位路徑：${names}。仍為 /path/to/dir 的伺服器無法啟動，並會每隔幾秒無限重試。`
+  },
   integrations: {
     title: '整合',
     emptyTitle: '連接你的世界。',

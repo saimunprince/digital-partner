@@ -98,6 +98,10 @@ export interface PartnerTranslations {
     automation: string
     toolRuns: (count: number) => string
   }
+  mcp: {
+    /** Named servers still holding the starter placeholder. */
+    unfinished: (names: string) => string
+  }
   integrations: {
     title: string
     emptyTitle: string

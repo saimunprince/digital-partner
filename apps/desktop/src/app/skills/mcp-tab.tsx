@@ -57,7 +57,30 @@ import { useDeepLinkHighlight } from '../settings/use-deep-link-highlight'
 // are the JSON keys, transport is inferred from `command` vs `url` — so any
 // README's "add this to your mcp.json" snippet pastes verbatim. Storage stays
 // the config.yaml `mcp_servers` map (CLI/TUI untouched).
-const STARTER_ENTRY = { command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem', '/path/to/dir'] }
+const STARTER_PATH = '/path/to/dir'
+const STARTER_ENTRY = { command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem', STARTER_PATH] }
+
+/**
+ * Names of servers still carrying the starter's placeholder path.
+ *
+ * `addServer` seeds an entry meant to be edited, and saving it unedited is
+ * silent: the server cannot start, so the launcher retries it every few
+ * seconds — forever, into a log nobody reads. One was found doing exactly that
+ * for a day and a half, roughly 25,000 lines of `Cannot access directory
+ * /path/to/dir`. Refusing the save is the only moment the mistake is visible.
+ *
+ * Derived from STARTER_ENTRY's own path so the check cannot drift from what
+ * the button writes.
+ */
+export function unfinishedServers(entries: McpServers): string[] {
+  return Object.entries(entries)
+    .filter(([, config]) => {
+      const args = (config as { args?: unknown }).args
+
+      return Array.isArray(args) && args.some(arg => arg === STARTER_PATH)
+    })
+    .map(([name]) => name)
+}
 
 const pretty = (value: unknown) => JSON.stringify(value, null, 2)
 const wrapDoc = (entries: McpServers) => pretty({ mcpServers: entries })
@@ -966,6 +989,14 @@ export function McpTab({ gateway, profile }: { gateway: HermesGateway | null; pr
       entries = parseServersDoc(draft)
     } catch (err) {
       notifyError(err, m.invalidJson)
+
+      return
+    }
+
+    const unfinished = unfinishedServers(entries)
+
+    if (unfinished.length > 0) {
+      notifyError(new Error(t.partner.mcp.unfinished(unfinished.join(', '))), m.saveFailed)
 
       return
     }
