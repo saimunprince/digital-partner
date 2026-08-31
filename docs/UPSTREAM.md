@@ -13,6 +13,9 @@ origin    saimunprince/digital-partner    this product
 upstream  NousResearch/hermes-agent       the engine
 ```
 
+`docs/DIGITAL-PARTNER.md` is the companion: what the product is, what was
+changed to build it, and what is still open.
+
 ## What conflicts, and what should
 
 Most merges are clean. When one is not, the conflict is almost always in a file
@@ -44,10 +47,14 @@ so they cannot conflict. Its type lives beside them, composed into the app's
 shape as `AppTranslations` rather than added to upstream's `Translations`.
 
 The product's NAME is applied at runtime (`i18n/brand-interpolate.ts`) from a
-deny-list of engine phrases — `Hermes Cloud`, `Hermes backend`, `Hermes
-gateway`, and the rest keep their real names because that is what a user would
-type, search for, or read in a log. Everything else that says Hermes is the
-product talking about itself and takes the product's name. It is a deny-list
+deny-list of engine phrases — `Hermes Cloud`, `Hermes Agent`, `Hermes CLI` and
+`Hermes path` keep their real names, because that is what a user would type,
+search for, install, or read in a log. That list is short on purpose:
+"Hermes backend", "Hermes gateway" and "Hermes runtime" are **not** on it —
+those are the product describing its own parts, and telling someone their
+"Hermes backend" is out of date shows them the name the product exists to
+replace. Everything else that says Hermes is the product talking about
+itself and takes the product's name. It is a deny-list
 because the allow-list that came before it went stale the moment upstream added
 a string, and the failure mode was the engine's name showing up in the product.
 

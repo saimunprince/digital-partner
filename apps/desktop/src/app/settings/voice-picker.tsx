@@ -13,9 +13,10 @@ import { notifyError } from '@/store/notifications'
 
 import { SectionHeading } from './primitives'
 
-/** Which config key holds the voice for each provider. The picker writes BOTH
- *  the provider and its voice in one save; letting them drift is precisely how
- *  the assistant ended up answering in a different voice each turn. */
+/** Which config key holds the voice for each provider. The picker writes the
+ *  voice, the sync provider and the STREAMING provider in one save; any two of
+ *  those drifting apart is precisely how the assistant ended up answering in a
+ *  different voice each turn. */
 const VOICE_KEY: Record<string, string> = {
   edge: 'tts.edge.voice',
   elevenlabs: 'tts.elevenlabs.voice_id',
@@ -113,7 +114,18 @@ export function VoicePicker({
   const select = (voice: CatalogVoice) => {
     const key = VOICE_KEY[voice.provider]
 
-    onSelect(key ? { 'tts.provider': voice.provider, [key]: voice.id } : { 'tts.provider': voice.provider })
+    onSelect({
+      'tts.provider': voice.provider,
+      // CLEARED, not pinned. An unset streaming provider follows `tts.provider`
+      // by design (`resolve_streaming_provider`: "we never silently swap to a
+      // different provider just to get streaming"), so clearing it leaves one
+      // source of truth instead of two that can disagree. Writing only
+      // `tts.provider` left this on whatever it was before — the assistant
+      // then used the chosen voice while streaming was up and a different one
+      // the moment it was not, which is the drift this picker exists to end.
+      'tts.streaming.provider': '',
+      ...(key ? { [key]: voice.id } : {})
+    })
   }
 
   return (
