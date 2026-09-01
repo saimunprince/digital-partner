@@ -19,7 +19,7 @@ VENV="$ROOT/.venv"
 
 # Product identity. The engine underneath keeps its own name; everything the
 # user sees comes from here (mirrors apps/desktop/src/brand.ts).
-BRAND_NAME="${PARTNER_BRAND_NAME:-Partner}"
+BRAND_NAME="${PARTNER_BRAND_NAME:-Onyx}"
 
 BOLD=$'\033[1m'; DIM=$'\033[2m'; RESET=$'\033[0m'
 say()  { printf '%s\n' "${DIM}·${RESET} $*"; }

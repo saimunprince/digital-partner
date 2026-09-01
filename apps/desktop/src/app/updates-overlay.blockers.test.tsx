@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { BRAND } from '@/brand'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import type { DesktopUpdateStatus } from '@/global'
 import { I18nProvider } from '@/i18n/context'
@@ -115,7 +116,7 @@ describe('BlockerView', () => {
     // The product names itself: every surface reads the branded tree, and
     // "update Hermes" is the engine's name showing through (see
     // i18n/brand-interpolate.ts).
-    expect(screen.getByText('Close other processes to update Partner')).toBeTruthy()
+    expect(screen.getByText(`Close other processes to update ${BRAND.productName}`)).toBeTruthy()
     expect(screen.getByText('python.exe')).toBeTruthy()
     expect(screen.queryByText('Update didn’t finish')).toBeNull()
   })
@@ -139,7 +140,7 @@ describe('BlockerView', () => {
       />
     )
 
-    expect(screen.getByText('Close other processes to update Partner')).toBeTruthy()
+    expect(screen.getByText(`Close other processes to update ${BRAND.productName}`)).toBeTruthy()
     expect(screen.getByText('python.exe')).toBeTruthy()
     expect(screen.getByText('PID 58636')).toBeTruthy()
     expect(screen.getByText(/can’t safely close these processes automatically/i)).toBeTruthy()
@@ -205,7 +206,7 @@ describe('BlockerView', () => {
       />
     )
 
-    expect(screen.getByText('Close local previews to update Partner?')).toBeTruthy()
+    expect(screen.getByText(`Close local previews to update ${BRAND.productName}?`)).toBeTruthy()
     expect(screen.getByText('Example Preview')).toBeTruthy()
     expect(screen.getByText('Port 8766')).toBeTruthy()
     expect(screen.getByText(/will not modify or delete your files/i)).toBeTruthy()

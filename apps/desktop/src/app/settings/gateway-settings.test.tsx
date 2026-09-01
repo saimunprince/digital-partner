@@ -1,6 +1,8 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { BRAND } from '@/brand'
+
 const getConnectionConfig = vi.fn()
 const saveConnectionConfig = vi.fn()
 
@@ -44,7 +46,7 @@ describe('GatewaySettings', () => {
     // Product identity: the copy names the product, not the engine underneath
     // (see i18n's {brand} token). The engine-truth strings still say Hermes.
     expect(
-      screen.getByText('Start a private Partner backend on localhost. This is the default and works offline.')
+      screen.getByText(`Start a private ${BRAND.productName} backend on localhost. This is the default and works offline.`)
     ).toBeTruthy()
 
     // The page manages the machine's gateway connections; it must load the

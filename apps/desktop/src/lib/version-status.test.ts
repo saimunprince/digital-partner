@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { BRAND } from '@/brand'
 import { brandedTranslations } from '@/i18n/brand-interpolate'
 import { TRANSLATIONS } from '@/i18n/catalog'
 
@@ -69,10 +70,10 @@ describe('resolveVersionStatus', () => {
 
   it('leads the tooltip with the apply message while applying', () => {
     expect(client({ applyMessage: 'Pulling…', applying: true, version: '0.4.2' }).tooltip).toBe(
-      'Pulling… · Partner v0.4.2'
+      `Pulling… · ${BRAND.productName} v0.4.2`
     )
     expect(client({ applying: true, version: '0.4.2' }).tooltip).toBe(
-      `${copy.updateInProgress} · Partner v0.4.2`
+      `${copy.updateInProgress} · ${BRAND.productName} v0.4.2`
     )
   })
 

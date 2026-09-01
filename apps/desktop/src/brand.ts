@@ -1,7 +1,7 @@
 /**
  * Brand configuration — the single source of product identity.
  *
- * The final product name is intentionally undecided; every user-facing surface
+ * Every user-facing surface
  * reads from here (directly, or via the `{brand}` i18n token interpolated in
  * `src/i18n/brand-interpolate.ts`) so the identity can change without a code
  * sweep. Do not hardcode a product name anywhere else.
@@ -25,8 +25,8 @@ export interface BrandConfig {
 const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {}
 
 const DEFAULTS: BrandConfig = {
-  productName: 'Partner',
-  assistantName: 'Partner',
+  productName: 'Onyx',
+  assistantName: 'Onyx',
   tagline: 'Your digital partner',
   markAsset: null
 }

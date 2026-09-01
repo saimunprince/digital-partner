@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { fieldCopyForSchemaKey } from '@/app/settings/field-copy'
+import { BRAND } from '@/brand'
 
 import { TRANSLATIONS } from './catalog'
 import { setRuntimeI18nLocale, translateNow } from './runtime'
@@ -18,7 +19,7 @@ describe('desktop i18n runtime translator', () => {
   it('translates string paths for the active runtime locale', () => {
     setRuntimeI18nLocale('zh')
 
-    expect(translateNow('boot.ready')).toBe('Partner 桌面版已就绪')
+    expect(translateNow('boot.ready')).toBe(`${BRAND.productName} 桌面版已就绪`)
     expect(translateNow('notifications.voice.noSpeechDetected')).toBe('没有检测到语音')
     expect(translateNow('composer.lookupNoMatches')).toBe('没有匹配项。')
     expect(translateNow('assistant.tool.statusRecovered')).toBe('已恢复')
@@ -67,7 +68,7 @@ describe('desktop i18n runtime translator', () => {
       boot.ready = undefined
       setRuntimeI18nLocale('ja')
 
-      expect(translateNow('boot.ready')).toBe('Partner is ready')
+      expect(translateNow('boot.ready')).toBe(`${BRAND.productName} is ready`)
     } finally {
       boot.ready = originalReady
     }

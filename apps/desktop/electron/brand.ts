@@ -13,6 +13,6 @@ export interface MainBrandConfig {
 }
 
 export const MAIN_BRAND: MainBrandConfig = {
-  productName: process.env.HERMES_DESKTOP_BRAND_NAME || 'Partner',
+  productName: process.env.HERMES_DESKTOP_BRAND_NAME || 'Onyx',
   tagline: 'Your digital partner'
 }
