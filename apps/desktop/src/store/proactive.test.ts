@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   $nudgeState,
   inQuietHours,
-  localDateKey,
   isNudgePass,
+  localDateKey,
   markNudged,
   minutesOfDay,
   type NudgeState,
@@ -100,6 +100,7 @@ describe('shouldNudge', () => {
     quietStart: '22:00',
     spacingMs: 25 * 60_000
   }
+
   const FRESH: NudgeState = { count: 0, date: null, lastAt: 0 }
   const at = (hour: number, minute = 0) => new Date(2026, 7, 31, hour, minute, 0)
   const idleFor = (now: Date, ms: number) => now.getTime() - ms
