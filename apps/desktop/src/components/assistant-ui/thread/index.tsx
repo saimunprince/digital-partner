@@ -176,6 +176,7 @@ export const Thread = memo(function Thread({
           components={messageComponents}
           emptyPlaceholder={emptyPlaceholder}
           loadingIndicator={loadingIndicator}
+          sessionId={sessionId}
           sessionKey={sessionKey}
         />
         {/* Presence follows the conversation into the corner. See
