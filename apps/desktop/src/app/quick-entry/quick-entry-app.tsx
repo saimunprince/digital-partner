@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef } from 'react'
 
+import { interpolateBrand } from '@/i18n/brand-interpolate'
 import {
   initialQuickComposerState,
   QUICK_TARGET_CURRENT,
@@ -131,7 +132,11 @@ export function QuickEntryApp() {
                 dispatch({ type: 'dismiss' })
               }
             }}
-            placeholder={state.connected ? 'Ask Hermes…' : 'Not connected — open Hermes to reconnect'}
+            placeholder={
+              state.connected
+                ? interpolateBrand('Ask Hermes…')
+                : interpolateBrand('Not connected — open Hermes to reconnect')
+            }
             ref={inputRef}
             spellCheck={false}
             style={{

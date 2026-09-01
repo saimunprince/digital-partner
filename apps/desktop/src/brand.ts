@@ -28,7 +28,10 @@ const DEFAULTS: BrandConfig = {
   productName: 'Onyx',
   assistantName: 'Onyx',
   tagline: 'Your digital partner',
-  markAsset: null
+  // The product's own mark — the reactor it is drawn as on Home. Without it
+  // this falls back to the engine's nous-girl asset, which is the clearest
+  // tell in the whole interface that this is somebody else's product.
+  markAsset: 'onyx-mark.svg'
 }
 
 export const BRAND: BrandConfig = {

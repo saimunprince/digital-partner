@@ -30,6 +30,12 @@ reading what was there.
 | `themes/presets.ts` | Horizon is the default skin | the product's identity |
 | `contrib/controller.tsx` | two title-bar cluster buttons | the other tools live in the nav rail |
 | `shell/nav-sidebar.tsx` | every route in the rail | upstream has no rail |
+| `quick-entry-app.tsx`, `plugins-settings.tsx`, `skills/index.tsx` | strings run through `interpolateBrand()` | copy hardcoded outside the i18n catalogue, where runtime branding never reaches |
+| `electron/quit-guard.ts`, `electron/renderer-load-error-page.ts` | `MAIN_BRAND.productName` | same, on the main-process side |
+| `session/hooks/use-session-actions/index.ts` | `desktopSessionCreateParams` is exported | the voice command centre mints the same params a new chat does |
+
+When one of those conflicts, take upstream's wording and keep the wrapper.
+The point is never the sentence — it is that the product's name appears in it.
 
 Everything else — connection scoping, browser gestures, context menus,
 whatever upstream reworked — take upstream's side and move on.
@@ -41,6 +47,15 @@ The five locale files (`i18n/{en,ja,zh,zh-hant,ar}.ts`) and `i18n/types.ts` are
 edits and conflicted on every single pull for no design reason. If a merge ever
 reports a conflict in one of them, something has been written there that should
 not have been.
+
+The product's MARK is its own too. `BRAND.markAsset` points at
+`public/onyx-mark.svg` — the reactor the assistant is drawn as on Home. Left
+unset it falls back to the engine's `nous-girl.jpg`, which is the clearest tell
+in the whole interface that this is somebody else's product.
+
+Tests must read `BRAND.productName` / `MAIN_BRAND.productName`, never the
+literal name. Nine of them hardcoded it and broke on a rename they had nothing
+to do with.
 
 The product's strings live in `i18n/partner/` — files upstream does not have,
 so they cannot conflict. Its type lives beside them, composed into the app's

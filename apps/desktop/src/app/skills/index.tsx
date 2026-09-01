@@ -26,6 +26,7 @@ import {
   setToolsetEnabled
 } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { interpolateBrand } from '@/i18n/brand-interpolate'
 import { isDesktopToolsetVisible } from '@/lib/desktop-toolsets'
 import { compactNumber } from '@/lib/format'
 import { queryClient } from '@/lib/query-client'
@@ -721,7 +722,7 @@ export function SkillsView({
 
     return (profilesData?.profiles ?? []).map(p => ({
       key: p.name,
-      label: p.is_default ? 'Hermes (default)' : p.name,
+      label: p.is_default ? interpolateBrand('Hermes (default)') : p.name,
       value: p.name
     }))
   }, [multiConnection, profilesData, rosterData])

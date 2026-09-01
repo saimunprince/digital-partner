@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Onyx">
+  <!-- The product's mark IS its presence: the same reactor the assistant is
+       drawn as on Home, held still. One identity, not a logo beside it.
+       Colours are literal rather than CSS variables — this is loaded through
+       an <img>, where the page's custom properties do not reach. -->
+  <defs>
+    <radialGradient id="onyx-core">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#c5c3f8"/>
+      <stop offset="72%" stop-color="#6e6af0"/>
+      <stop offset="100%" stop-color="#6e6af0" stop-opacity="0.35"/>
+    </radialGradient>
+    <radialGradient id="onyx-glow">
+      <stop offset="0%" stop-color="#6e6af0" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#6e6af0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Onyx: the stone the light sits in. -->
+  <circle cx="50" cy="50" r="49" fill="#0b0b12"/>
+  <circle cx="50" cy="50" r="46" fill="none" stroke="#2a2a3d" stroke-width="1.4"/>
+  <circle cx="50" cy="50" r="42" fill="#101019"/>
+
+  <!-- Coil — segmented, as it is when the assistant is at rest. -->
+  <g stroke="#6e6af0" stroke-opacity="0.75" fill="none" stroke-width="7" stroke-linecap="butt">
+    <circle cx="50" cy="50" r="33" stroke-dasharray="12.85 7.87"/>
+  </g>
+
+  <circle cx="50" cy="50" r="24.5" fill="none" stroke="#3a3a55" stroke-width="0.9"/>
+  <circle cx="50" cy="50" r="28" fill="url(#onyx-glow)"/>
+  <circle cx="50" cy="50" r="15" fill="url(#onyx-core)"/>
+</svg>

@@ -12,6 +12,7 @@ import { $pluginRecords, type PluginRecord, setPluginEnabled } from '@/contrib/p
 import { discoverRuntimePlugins } from '@/contrib/runtime-loader'
 import { getProfiles } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { interpolateBrand } from '@/i18n/brand-interpolate'
 import { triggerHaptic } from '@/lib/haptics'
 import { FolderOpen, Monitor, Package, RefreshCw } from '@/lib/icons'
 import { normalize } from '@/lib/text'
@@ -253,7 +254,7 @@ function AgentPluginsSection() {
             <SelectContent>
               {profiles.map(profile => (
                 <SelectItem key={profile.name} value={profile.name}>
-                  {profile.is_default ? 'Hermes (default)' : profile.name}
+                  {profile.is_default ? interpolateBrand('Hermes (default)') : profile.name}
                 </SelectItem>
               ))}
             </SelectContent>

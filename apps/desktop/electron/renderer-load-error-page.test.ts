@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 
 import { test } from 'vitest'
 
+import { MAIN_BRAND } from './brand'
 import { buildRendererLoadErrorPage, loadRendererLoadErrorPage } from './renderer-load-error-page'
 
 test('error page names the failure and carries a Reload button', () => {
@@ -12,7 +13,7 @@ test('error page names the failure and carries a Reload button', () => {
     repairHint: 'hermes desktop --force-build'
   })
 
-  assert.match(html, /Hermes couldn.t start the desktop UI/)
+  assert.match(html, new RegExp(`${MAIN_BRAND.productName} couldn.t start the desktop UI`))
   assert.match(html, /incomplete after the last update \(2 missing file\(s\)\)/)
   assert.match(html, /-6/)
   assert.match(html, /assets\/app-C0ffee\.js/)
