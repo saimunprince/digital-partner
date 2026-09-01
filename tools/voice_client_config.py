@@ -75,6 +75,82 @@ def _relay(reason: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Live (speech-to-speech)
+# ---------------------------------------------------------------------------
+
+#: The one wire shape the desktop knows how to speak for a live session.
+#: Gemini's bidiGenerateContent: a WebSocket carrying PCM both ways, the
+#: model's own turn detection, and function calls back to the caller.
+LIVE_WIRE_GEMINI = "gemini-bidi"
+
+#: Default backend. Measured against the alternative on this account:
+#: 0.70s to first audio and steady (0.66/0.70/0.71) versus 2.08s and swinging
+#: (1.62-3.17) for gemini-2.5-flash-native-audio. Latency IS the feature here,
+#: so the steadier one wins; `voice.live.model` overrides it.
+DEFAULT_LIVE_MODEL = "models/gemini-3.1-flash-live-preview"
+
+_GEMINI_LIVE_URL = (
+    "wss://generativelanguage.googleapis.com/ws/"
+    "google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent"
+)
+
+
+def _live_section() -> Dict[str, Any]:
+    from hermes_cli.config import load_config
+
+    voice_cfg = load_config().get("voice") or {}
+    section = voice_cfg.get("live") if isinstance(voice_cfg, dict) else None
+
+    return section if isinstance(section, dict) else {}
+
+
+def _resolve_live_client_config() -> Dict[str, Any]:
+    """Resolve the speech-to-speech session, or say why it is unavailable.
+
+    Same shape and same trust boundary as the STT/TTS resolvers above: the
+    key travels to an already-authenticated client that can drive the agent,
+    and is held in client memory only.
+
+    Unavailable is the normal answer. The four-stage path is what runs when
+    this returns ``off``, and it is not a degraded mode — it is the mode this
+    product shipped with.
+    """
+    section = _live_section()
+
+    if section.get("enabled") is not True:
+        return {"mode": "off", "reason": "voice.live.enabled is false"}
+
+    from tools import tts_tool
+
+    # Same env var and resolution order the rest of the Gemini surface uses,
+    # so a key that works anywhere works here.
+    api_key = tts_tool._resolve_provider_key("GEMINI_API_KEY", "gemini")
+
+    if not api_key:
+        return {"mode": "off", "reason": "no credentials"}
+
+    def _text(key: str, fallback: str = "") -> str:
+        value = section.get(key)
+
+        return value.strip() if isinstance(value, str) and value.strip() else fallback
+
+    return {
+        "mode": "direct",
+        "wire": LIVE_WIRE_GEMINI,
+        "provider": "gemini",
+        "url": _GEMINI_LIVE_URL,
+        "api_key": api_key,
+        "model": _text("model", DEFAULT_LIVE_MODEL),
+        # Empty means "the provider decides" for both — a voice we do not name
+        # is the provider's default, and a language we do not pin lets the
+        # model follow whichever the speaker used, which is the point for
+        # someone who switches mid-sentence.
+        "voice": _text("voice"),
+        "language": _text("language"),
+    }
+
+
+# ---------------------------------------------------------------------------
 # STT
 # ---------------------------------------------------------------------------
 
@@ -321,7 +397,15 @@ def resolve_client_voice_config() -> Dict[str, Any]:
     """
     if not _client_direct_enabled():
         disabled = _relay("voice.client_direct disabled")
-        return {"stt": disabled, "tts": disabled}
+
+        # A live session IS a direct client call, so the same switch turns it
+        # off. Its "unavailable" word is `off`, not `relay`: there is no relay
+        # path for speech-to-speech to fall back to.
+        return {
+            "stt": disabled,
+            "tts": disabled,
+            "live": {"mode": "off", "reason": "voice.client_direct disabled"},
+        }
 
     try:
         stt = _resolve_stt_client_config()
@@ -334,4 +418,10 @@ def resolve_client_voice_config() -> Dict[str, Any]:
         logger.exception("client voice-config TTS resolution failed")
         tts = _relay("resolution error")
 
-    return {"stt": stt, "tts": tts}
+    try:
+        live = _resolve_live_client_config()
+    except Exception:
+        logger.exception("client voice-config live resolution failed")
+        live = {"mode": "off", "reason": "resolution error"}
+
+    return {"stt": stt, "tts": tts, "live": live}

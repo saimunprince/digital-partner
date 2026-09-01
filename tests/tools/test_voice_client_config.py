@@ -22,7 +22,7 @@ def voice_home(tmp_path, monkeypatch):
     for var in (
         "GROQ_API_KEY", "OPENAI_API_KEY", "VOICE_TOOLS_OPENAI_KEY",
         "MISTRAL_API_KEY", "XAI_API_KEY", "ELEVENLABS_API_KEY",
-        "DEEPINFRA_API_KEY", "HERMES_LOCAL_STT_LANGUAGE",
+        "DEEPINFRA_API_KEY", "HERMES_LOCAL_STT_LANGUAGE", "GEMINI_API_KEY",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -189,3 +189,87 @@ def test_resolution_never_raises(voice_home, monkeypatch):
     result = _resolve()
     assert result["stt"]["mode"] in {"direct", "relay"}
     assert result["tts"]["mode"] in {"direct", "relay"}
+
+
+# ---------------------------------------------------------------------------
+# Live (speech-to-speech)
+# ---------------------------------------------------------------------------
+
+
+def test_live_is_off_until_asked_for(voice_home):
+    """The default. A live session costs money and is a preview model, so it
+    starts from no."""
+    voice_home({"stt": {"provider": "groq", "groq": {"api_key": "gsk_x"}}})
+
+    assert _resolve()["live"] == {"mode": "off", "reason": "voice.live.enabled is false"}
+
+
+def test_live_off_without_credentials(voice_home):
+    """Enabled but unusable is still off — and says which of the two it is,
+    because "nothing happens when I talk" has too many causes to guess at."""
+    voice_home({"voice": {"live": {"enabled": True}}})
+
+    assert _resolve()["live"] == {"mode": "off", "reason": "no credentials"}
+
+
+def test_live_resolves_direct_with_a_key(voice_home, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "gem_test123")
+    voice_home({"voice": {"live": {"enabled": True}}})
+
+    live = _resolve()["live"]
+
+    assert live["mode"] == "direct"
+    assert live["wire"] == "gemini-bidi"
+    assert live["api_key"] == "gem_test123"
+    assert live["url"].startswith("wss://")
+    # The client cannot connect without a model, so a default must be pinned
+    # here rather than left to the client to guess.
+    assert live["model"]
+
+
+def test_live_honours_a_chosen_model_and_voice(voice_home, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "gem_test123")
+    voice_home({
+        "voice": {"live": {
+            "enabled": True,
+            "model": "models/some-other-live",
+            "voice": "Charon",
+            "language": "bn-BD",
+        }},
+    })
+
+    live = _resolve()["live"]
+
+    assert live["model"] == "models/some-other-live"
+    assert live["voice"] == "Charon"
+    assert live["language"] == "bn-BD"
+
+
+def test_blank_voice_and_language_stay_blank(voice_home, monkeypatch):
+    """Empty means "the provider decides" — not a value this layer invents.
+    Pinning a language is actively wrong for someone who switches mid-sentence."""
+    monkeypatch.setenv("GEMINI_API_KEY", "gem_test123")
+    voice_home({"voice": {"live": {"enabled": True, "voice": "   ", "language": ""}}})
+
+    live = _resolve()["live"]
+
+    assert live["voice"] == ""
+    assert live["language"] == ""
+
+
+def test_client_direct_off_also_turns_live_off(voice_home, monkeypatch):
+    """One switch. A live session is a direct client call, so the setting that
+    forbids those forbids this — and it reports `off`, not `relay`, because
+    there is no relay path for speech-to-speech to fall back to."""
+    monkeypatch.setenv("GEMINI_API_KEY", "gem_test123")
+    voice_home({"voice": {"client_direct": False, "live": {"enabled": True}}})
+
+    assert _resolve()["live"]["mode"] == "off"
+
+
+def test_live_never_leaks_the_key_into_the_off_verdict(voice_home, monkeypatch):
+    """An `off` verdict is logged and shown; it must carry nothing secret."""
+    monkeypatch.setenv("GEMINI_API_KEY", "gem_test123")
+    voice_home({"voice": {"client_direct": False, "live": {"enabled": True}}})
+
+    assert "gem_test123" not in repr(_resolve()["live"])

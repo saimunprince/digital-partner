@@ -3,9 +3,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useVoiceConversation } from '@/app/chat/composer/hooks/use-voice-conversation'
 import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
+import { BRAND } from '@/brand'
 import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
+import { fetchLiveConfig } from '@/lib/live-voice/config'
+import { liveInstruction } from '@/lib/live-voice/instruction'
+import { type LiveSession, type LiveStatus, startLiveSession } from '@/lib/live-voice/session'
 import { playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
 import { createWakeHandover } from '@/lib/wake-handover'
 import { notifyError } from '@/store/notifications'
@@ -26,7 +30,17 @@ import {
 import { canSubmitVoiceText, ensureVoiceRuntimeReady, submitVoiceText } from '@/store/voice-submit'
 
 import { turnActivity } from './activity-trail'
+import { askEngine } from './ask-engine'
 import { greetingKey } from './greeting'
+
+/** A live session's states in the surface's own vocabulary. `working` is the
+ *  engine running a turn — the orb should not read "listening" through it. */
+const LIVE_STATUS = {
+  connecting: 'thinking',
+  listening: 'listening',
+  speaking: 'speaking',
+  working: 'thinking'
+} as const
 
 /**
  * The Home surface's voice conversation.
@@ -66,6 +80,12 @@ export function useHomeVoice() {
   // handover the detector is stopped on wake and never re-armed, so the wake
   // phrase works exactly once per launch.
   const wakeRef = useRef(createWakeHandover())
+  // The speech-to-speech session, when the backend offers one. While it holds
+  // the conversation the four-stage machine below stays switched off — two
+  // things listening on one microphone is two things fighting over it.
+  const liveRef = useRef<LiveSession | null>(null)
+  const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null)
+  const live = liveStatus !== null
 
   const sessionState = voiceRuntimeId ? sessionStates[voiceRuntimeId] : undefined
   const busy = Boolean(sessionState?.busy)
@@ -191,7 +211,10 @@ export function useHomeVoice() {
     // releasing the device — opening ours while it still holds it makes
     // getUserMedia fail, and the surface just never starts listening.
     beforeMicOpen: () => wakeRef.current.barrier(),
-    enabled: phase === 'live',
+    // Off while a live session is running, and off while one is still being
+    // negotiated: opening the mic for the old path and then handing it to the
+    // new one loses the first thing said.
+    enabled: phase === 'live' && !live,
     onFatalError: () => setPhase('idle'),
     onStopWord: () => setPhase('idle'),
     onSubmit: submit,
@@ -221,6 +244,96 @@ export function useHomeVoice() {
     }
   })
 
+  // Speech-to-speech, when the backend offers it.
+  //
+  // Claims the surface BEFORE asking whether it is available: `live` gates the
+  // four-stage machine, and letting that machine open the microphone during
+  // the (cached, fast) negotiation would lose whatever was said first. If no
+  // live session is configured, this clears and the old path takes over —
+  // which is not a degraded mode, it is the mode this product shipped with.
+  //
+  // The ref holds an imperative handle CREATED here — a socket and an audio
+  // graph that must be torn down on the way out — not a reactive value copied
+  // from somewhere else, which is what the rule below exists to stop.
+  // eslint-disable-next-line no-restricted-syntax
+  useEffect(() => {
+    if (phase !== 'live') {
+      return
+    }
+
+    let cancelled = false
+
+    setLiveStatus('connecting')
+
+    void (async () => {
+      let config
+
+      try {
+        config = await fetchLiveConfig()
+      } catch {
+        config = null
+      }
+
+      if (cancelled) {
+        return
+      }
+
+      if (!config) {
+        setLiveStatus(null)
+
+        return
+      }
+
+      try {
+        // The detector and this session share one microphone, exactly as the
+        // four-stage path does.
+        await wakeRef.current.barrier()
+
+        const session = await startLiveSession({
+          config,
+          instruction: liveInstruction(BRAND.productName),
+          onAsk: request =>
+            askEngine(request, {
+              busy: () => Boolean($sessionStates.get()[$voiceRuntimeId.get() ?? '']?.busy),
+              messages: voiceMessages,
+              submit
+            }),
+          onError: error => notifyError(error, copy.talkAria),
+          onStatus: status => {
+            if (!cancelled) {
+              setLiveStatus(status)
+            }
+          }
+        })
+
+        if (cancelled) {
+          session.stop()
+
+          return
+        }
+
+        liveRef.current = session
+      } catch (error) {
+        // Fall back rather than stranding the surface: the old path still
+        // works, and a preview model that refuses a connection must not take
+        // the ability to talk down with it.
+        notifyError(error, copy.talkAria)
+        setLiveStatus(null)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      liveRef.current?.stop()
+      liveRef.current = null
+      setLiveStatus(null)
+    }
+    // Phase ONLY. `submit` is rebuilt whenever the locale object changes, and
+    // depending on it would tear down a live conversation and reconnect it
+    // mid-sentence for a reason the user cannot see.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
   // A prompt queued by something other than the user's own voice — the daily
   // briefing, an idle offer, a reminder later. It rides the SAME submit path a
   // spoken turn takes, so the reply is spoken exactly like any other answer.
@@ -234,10 +347,23 @@ export function useHomeVoice() {
     }
 
     const take = (prompt: null | string) => {
-      if (prompt) {
-        $pendingVoicePrompt.set(null)
-        void submit(prompt)
+      if (!prompt) {
+        return
       }
+
+      $pendingVoicePrompt.set(null)
+
+      // Through the live session when one is holding the conversation: the
+      // model then SPEAKS the answer as part of the exchange it is already in.
+      // Submitting straight to the engine instead would produce a reply with
+      // nothing to say it.
+      if (liveRef.current) {
+        liveRef.current.say(prompt)
+
+        return
+      }
+
+      void submit(prompt)
     }
 
     // nanostores' subscribe fires immediately with the current value, so this
@@ -276,7 +402,7 @@ export function useHomeVoice() {
     start: () => setPhase('greeting'),
     // The greeting is the assistant speaking, and the orb and the readout
     // should say so before the machine itself is running.
-    status: phase === 'greeting' ? ('speaking' as const) : conversation.status,
+    status: phase === 'greeting' ? ('speaking' as const) : (liveStatus ? LIVE_STATUS[liveStatus] : conversation.status),
     stop,
     toggle: () => (phase === 'idle' ? setPhase('greeting') : stop())
   }

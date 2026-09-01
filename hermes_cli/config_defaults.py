@@ -1998,6 +1998,35 @@ DEFAULT_CONFIG = {
         # at voice-session start) instead of relaying audio through the
         # gateway — lowest-hop path in both directions. false = always relay.
         "client_direct": True,
+        # Speech-to-speech, when the provider offers it.
+        #
+        # The ordinary path is four stages in a row — wait for silence,
+        # transcribe the finished clip, answer, synthesize — and the waiting
+        # is structural: nothing can start until the speaker stops. A live
+        # session removes the seams. Audio streams both ways over one socket,
+        # the provider does its own turn detection and interruption, and the
+        # first word comes back in well under a second (measured: 3.2s of
+        # dead air becomes 0.70s).
+        #
+        # The engine keeps the work. The live model holds the CONVERSATION;
+        # anything that needs memory, tools, or real data is handed back
+        # through a single function call and answered by the agent exactly as
+        # a typed request would be. Nothing about the agent loop changes, so
+        # this cannot drift from the rest of Hermes.
+        #
+        # Off by default, and the four-stage path stays: these models are
+        # preview, and a fallback that was deleted is a fallback you do not
+        # have.
+        "live": {
+            "enabled": False,
+            # Empty = the provider's own default for the chosen backend.
+            "model": "",
+            # One of the provider's prebuilt voices. Empty = provider default.
+            "voice": "",
+            # Spoken language hint. Empty = let the model follow the speaker,
+            # which is what a bilingual user needs.
+            "language": "",
+        },
         "beep_enabled": True,         # Play record start/stop beeps in CLI voice mode
         "beep_volume": 0.3,           # Beep amplitude multiplier (0.0-1.0, default keeps prior hardcoded value)
         "thinking_sound": True,       # Calm ambient bubble sound while the agent works in voice chat (volume follows beep_volume)
