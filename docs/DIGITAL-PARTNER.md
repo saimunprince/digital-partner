@@ -140,6 +140,30 @@ looking, but it was not the cause.)
 The page itself scrolled. While talking it does not, which is what guarantees
 the orb holds its place.
 
+### It answered with nothing, then said the same thing again
+
+Fourteen assistant turns in the voice session had **no content and no tool
+calls**, several with `finish_reason: "length"` — the model spent its entire
+completion budget and produced not one word. Gemini 2.5 Flash is a thinking
+model: hidden reasoning is billed against the same budget as the answer, and a
+small cap can finish with an empty message. Hermes already knew this shape —
+its Meta provider plugin carries the note *"spends completion budget on hidden
+reasoning tokens first; small caps can finish with empty content"*.
+
+The agent re-answers when a turn comes back empty. That is what "it says the
+same thing twice" actually was.
+
+`model.max_tokens: 16384` (the default is unset, and the effective cap was far
+lower). The fourteen empty turns were deactivated rather than deleted: while
+they stayed in the working transcript the pre-call sanitizer healed them on
+**every single call** — 125 times, and the count per call was still climbing.
+
+What this was NOT: `reasoning_effort`. Benchmarked at the free tier's 10 RPM
+with pacing, default / `low` / `none` came in at 1.82 / 1.71 / 1.52s median,
+all picking the right tool. An earlier unpaced run showed 2.69 vs 1.41 and was
+pure network noise. A 0.3s difference does not explain a 34s turn, so nothing
+was changed on that basis.
+
 ### Mistakes worth naming
 
 - **The i18n script branded the key, not the value** — `updateHermes:` became
@@ -239,8 +263,14 @@ the port back from there. Delete it and the next authorization is a
   hidden-message flag through the submit pipeline, not a display filter.
 - **Chat still looks like upstream** below the corner orb — transcript rows,
   tool rows, approval cards.
-- **Turn latency runs 6–34s** with tools in play, and the model has been seen
-  repeating itself and re-running the same tool. Not diagnosed.
+- **Turn latency still runs 6–34s** when a turn makes several tool calls. Each
+  round trip is a fresh model call at ~2s plus the tool's own time, so four
+  calls is eight seconds before the tools have done anything. The empty-answer
+  retries above inflated it further; whether anything remains beyond the
+  arithmetic is unmeasured.
+- **The free Gemini tier rate-limits at 10 requests/minute.** Nine rapid calls
+  hit 429, and it cleared within the minute — a per-minute cap, not a daily
+  one. A busy conversation with tool round-trips can reach it.
 
 ## Checking it still works
 
